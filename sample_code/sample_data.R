@@ -22,8 +22,8 @@ calc_C_phi = function(coords, phi) {
 
 set.seed(123)
 
-lat = seq(0, 1, by = 0.1)
-lon = seq(0, 1, by = 0.1)
+lat = seq(0, 10, by = 1)
+lon = seq(0, 10, by = 1)
 
 coords = as.matrix(expand.grid(lat, lon))
 colnames(coords) = c("lat", "lon")
@@ -33,18 +33,18 @@ p = 2
 
 # generating w
 sigmasq_w = 1
-phi_w = 0.1
+phi_w = 0.01
 C_w = calc_C_phi(coords, phi_w)
 w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
 
 # generating beta's
 sigmasq_1 = 1
-phi_1 = 0.1
+phi_1 = 2
 C_1 = calc_C_phi(coords, phi_1)
 beta_1 = MASS::mvrnorm(1, rep(0, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 1
-phi_2 = 0.1
+phi_2 = 2
 C_2 = calc_C_phi(coords, phi_2)
 beta_2 = MASS::mvrnorm(1, rep(0, n), sigmasq_2 * C_2)
 
@@ -57,6 +57,18 @@ tausq = 0.0001
 epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
 
 Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+
+# generate knots
+## 1 in every k^2 point on a grid is a knot
+k = 3
+
+lat_knots = unique(lat)
+lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+
+lon_knots = unique(lon)
+lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+
+knots = as.matrix(expand.grid(lat_knots, lon_knots))
 
 # create plot of Y according to coordinates
 Y_plot = ggplot(data = data.frame(coords, Y)) +

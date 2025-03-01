@@ -1,7 +1,167 @@
 [
     {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+        "file_last_write": 1740810338.0,
+        "definitions": [
+            {
+                "usr": "c:@F@inv_Chol#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "inv_Chol(arma::mat)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 3,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@logdet#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "logdet(arma::mat)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 14,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@calc_C#$@N@arma@S@Mat>#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "calc_C(arma::mat, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 24,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@calc_c#$@N@arma@S@Mat>#d#S0_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "calc_c(arma::mat, arma::mat, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 40,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@calc_C_tilde#$@N@arma@S@Mat>#d#S0_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "calc_C_tilde(arma::mat, arma::mat, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 58,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@logit#d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "logit(double, double, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 70,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@logistic#d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "logistic(double, double, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 74,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@par_huvtransf_fwd#d#&1$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "par_huvtransf_fwd(double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 78,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@par_huvtransf_back#d#&1$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "par_huvtransf_back(double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 83,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@normal_proposal_logitscale#&1d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "normal_proposal_logitscale(const double &, double, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 88,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@calc_jacobian#d#d#&1$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "calc_jacobian(double, double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 93,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@wGP_log_density#$@N@arma@S@Col>#d#d#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "wGP_log_density(arma::vec, double, arma::mat)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 101,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@do_I_accept#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "do_I_accept(double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 114,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/nonsvc_DELETE_BEFORE_SUBMITTING.cpp",
         "file_last_write": 1740780424.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
+        "file_last_write": 1740810659.0,
+        "definitions": [
+            {
+                "usr": "c:@F@phi_RW#$@N@arma@S@Mat>#d#$@N@arma@S@Col>#d#d#d#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "phi_RW(arma::mat, arma::vec, double, double, double, arma::mat)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
+                "line": 17,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/test_fxns.cpp",
+        "file_last_write": 1740810489.0,
         "definitions": [],
         "hidden": false
     }

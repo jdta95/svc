@@ -11,12 +11,25 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// phi_RW
+double phi_RW(arma::mat knots, arma::vec w_knots, double sigmasq_cur, double phi_cur, double proposal_sd, arma::mat phi_bounds);
+RcppExport SEXP _svc_phi_RW(SEXP knotsSEXP, SEXP w_knotsSEXP, SEXP sigmasq_curSEXP, SEXP phi_curSEXP, SEXP proposal_sdSEXP, SEXP phi_boundsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type knots(knotsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w_knots(w_knotsSEXP);
+    Rcpp::traits::input_parameter< double >::type sigmasq_cur(sigmasq_curSEXP);
+    Rcpp::traits::input_parameter< double >::type phi_cur(phi_curSEXP);
+    Rcpp::traits::input_parameter< double >::type proposal_sd(proposal_sdSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi_bounds(phi_boundsSEXP);
+    rcpp_result_gen = Rcpp::wrap(phi_RW(knots, w_knots, sigmasq_cur, phi_cur, proposal_sd, phi_bounds));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    // {"_svc_rcpparma_hello_world", (DL_FUNC) &_svc_rcpparma_hello_world, 0},
-    // {"_svc_rcpparma_outerproduct", (DL_FUNC) &_svc_rcpparma_outerproduct, 1},
-    // {"_svc_rcpparma_innerproduct", (DL_FUNC) &_svc_rcpparma_innerproduct, 1},
-    // {"_svc_rcpparma_bothproducts", (DL_FUNC) &_svc_rcpparma_bothproducts, 1},
+    {"_svc_phi_RW", (DL_FUNC) &_svc_phi_RW, 6},
     {NULL, NULL, 0}
 };
 
