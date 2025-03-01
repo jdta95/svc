@@ -30,12 +30,13 @@ arma::mat calc_C(
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       // calculate the distance
-      C(i, j) = (s(i, 0) - s(j, 0)) * (s(i, 1) - s(j, 1));
+      C(i, j) = std::sqrt((s(i, 0) - s(j, 0)) * (s(i, 0) - s(j, 0)) +
+        (s(i, 1) - s(j, 1)) * (s(i, 1) - s(j, 1)));
     }
   }
   C = exp(-0.5 * C / phi);
   return C;
-};
+}
 
 arma::mat calc_c(
     arma::mat s,
@@ -48,7 +49,8 @@ arma::mat calc_c(
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < m; j++) {
       // calculate the distance between each s and each knot
-      c(j, i) = (s(i, 0) - knots(j, 0)) * (s(i, 1) - knots(j, 1));
+      c(j, i) = std::sqrt((s(i, 0) - knots(j, 0)) * (s(i, 0) - knots(j, 0)) +
+        (s(i, 1) - knots(j, 1)) * (s(i, 1) - knots(j, 1)));
     }
   }
   c = exp(-0.5 * c / phi);
@@ -105,8 +107,8 @@ double wGP_log_density(
 ) {
   arma::mat Sigma = sigmasq * C_phi;
   
-  double log_likelihood =  -0.5 * std::log(arma::det((Sigma))) -
-    0.5 * arma::as_scalar(w.t() * arma::inv(Sigma) * w);
+  double log_likelihood =  -0.5 * logdet(Sigma) -
+    0.5 * arma::as_scalar(w.t() * inv_Chol(Sigma) * w);
   
   return log_likelihood;
 }

@@ -33,7 +33,7 @@ p = 2
 
 # generating w
 sigmasq_w = 1
-phi_w = 0.01
+phi_w = 2
 C_w = calc_C_phi(coords, phi_w)
 w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
 
