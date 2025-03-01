@@ -4,7 +4,7 @@ arma::mat inv_Chol(
     arma::mat A
 ) {
   A = 0.5 * (A + A.t()); // Ensure symmetry
-  A += arma::eye(A.n_rows, A.n_cols) * 1e-3; // Add a small value to the diagonal for numerical stability
+  A += arma::eye(A.n_rows, A.n_cols) * 1e-10; // Add a small value to the diagonal for numerical stability
   arma::mat R = arma::chol(A);
   arma::mat Rinv = arma::inv(R);
   arma::mat Ainv = Rinv * Rinv.t();
@@ -15,7 +15,7 @@ double logdet(
     arma::mat A
 ) {
   A = 0.5 * (A + A.t()); // Ensure symmetry
-  A += arma::eye(A.n_rows, A.n_cols) * 1e-3; // Add a small value to the diagonal for numerical stability
+  A += arma::eye(A.n_rows, A.n_cols) * 1e-10; // Add a small value to the diagonal for numerical stability
   arma::mat R = arma::chol(A);
   double logdet = 2 * arma::accu(arma::log(arma::diagvec(R)));
   return logdet;
