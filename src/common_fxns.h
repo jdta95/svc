@@ -1,3 +1,6 @@
+#ifndef COMMON_FXNS_H
+#define COMMON_FXNS_H
+
 #include <RcppArmadillo.h>
 
 arma::mat inv_Chol(
@@ -154,3 +157,81 @@ double phi_RW(
   
   return phi_cur;
 }
+
+arma::vec update_beta_r(double tau_square, double sigma_r_square, double phi_r, const arma::mat& Knots, const arma::mat& s) {
+  // Calculate the covariance matrix K based on the locations and phi_r
+  arma::mat C = calc_C(Knots, phi_r);
+  
+  // Calculate the inverse of the covariance matrix using Cholesky decomposition
+  arma::mat C_inv = inv_Chol(C);
+  
+  // Calculate the variance parameter for the posterior distribution
+  arma::mat post_var = inv_Chol(inv_Chol(tau_square * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigma_r_square * C));
+  
+  // Return beta_r
+  return calc_c(s, Knots, phi_r) * C_inv * arma::mvnrnd(arma::zeros(C.n_rows), post_var);
+}
+
+
+double update_sigma2_r(const arma::vec& beta_r, double a_r, double b_r, double phi_r, const arma::mat& Knots) {
+  // Calculate the covariance matrix K based on the locations and phi_r
+  arma::mat C = calc_C(Knots, phi_r);
+  
+  // Calculate the inverse of the covariance matrix using Cholesky decomposition
+  arma::mat C_inv = inv_Chol(C);
+  
+  // Calculate (beta_r' C^{-1} beta_r)
+  double beta_r_sum_square = arma::as_scalar(beta_r.t() * C_inv * beta_r);
+  
+  // Calculate the shape and scale parameters for the inverse gamma distribution
+  double a_r_post = a_r + beta_r.n_elem / 2.0;
+  double b_r_post = b_r + beta_r_sum_square / 2.0;
+  
+  // Sample sigma_r^2 from the inverse gamma distribution
+  return 1.0 / arma::randg(arma::distr_param(a_r_post, 1.0 / b_r_post));
+}
+
+
+double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::vec& beta, const arma::vec& w, double a_t, double b_t) {
+  arma::vec residual = Y - X * beta - w;
+  double residual_sum_square = arma::dot(residual, residual);
+  double a_t_post = a_t + Y.n_elem / 2.0;
+  double b_t_post = b_t + residual_sum_square / 2.0;
+  
+  // Sample tau^2 from the inverse gamma distribution
+  return 1.0 / arma::randg(arma::distr_param(a_t_post, 1.0 / b_t_post));
+}
+
+
+arma::vec update_w_s(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_w, double phi_w, double tausq, const arma::mat& knots) {
+  // Calculate the covariance matrix K based on the locations and phi_w
+  arma::mat C = calc_C(knots, phi_w);
+  
+  // Calculate the inverse of the covariance matrix using Cholesky decomposition
+  arma::mat C_inv = inv_Chol(C);
+  
+  // Calculate the variance parameter for the posterior distribution
+  arma::mat post_var = inv_Chol(inv_Chol(tausq * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigmasq_w * C));
+  
+  // Calculate the mean parameter for the posterior distribution
+  arma::vec post_mean = post_var * (C_inv * (Y - X * beta_knots));
+  
+  // Sample w_s from the posterior distribution
+  return post_mean + arma::chol(post_var) * arma::randn(C.n_rows);
+}
+
+
+arma::vec calc_w_tilde(const arma::mat& s, const arma::mat& knots, double phi_w, const arma::vec& w_star) {
+  arma::mat C_tilde = calc_C_tilde(s, knots, phi_w);
+  arma::mat C_inv = inv_Chol(calc_c(s, knots, phi_w));
+  return C_tilde * C_inv * w_star;
+}
+
+arma::vec calc_beta_tilde(const arma::mat& s, const arma::mat& knots, double phi_w, const arma::vec& beta_star) {
+  arma::mat C_tilde = calc_C_tilde(s, knots, phi_w);
+  arma::mat C_inv = inv_Chol(calc_c(s, knots, phi_w));
+  return C_tilde * C_inv * beta_star;
+}
+
+
+#endif 
