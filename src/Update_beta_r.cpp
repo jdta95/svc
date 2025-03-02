@@ -18,3 +18,5 @@
   // Return beta_r
 //  return calc_c(s, Knots, phi_r) * C_inv * arma::mvnrnd(arma::zeros(C.n_rows), post_var);
 //}
+
+}

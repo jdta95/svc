@@ -14,6 +14,7 @@
   //arma::mat C_inv = inv_Chol(C);
   
   // Calculate the variance parameter for the posterior distribution
+
   //arma::mat post_var = inv_Chol(inv_Chol(tausq * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigmasq_w * C));
   
   // Calculate the mean parameter for the posterior distribution
@@ -22,3 +23,5 @@
   // Sample w_s from the posterior distribution
   //return post_mean + arma::chol(post_var) * arma::randn(C.n_rows);
 //}
+
+}
