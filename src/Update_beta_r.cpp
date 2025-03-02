@@ -16,5 +16,5 @@ double update_beta_r(double tau_square, double sigma_r_square, double phi_r, con
   arma::mat post_var = inv_Chol(inv_Chol(tau_square*arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigma_r_square*C));
 
   // Return beta_r
-  return calc_c(s,Knots, phi)*C_inv*arma::mvnrnd(arma::zeros(C.n_rows), post_var);
+  return arma::mvnrnd(arma::zeros(C.n_rows), post_var);
 }
