@@ -1,7 +1,7 @@
 [
     {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-        "file_last_write": 1740810338.0,
+        "file_last_write": 1740833666.0,
         "definitions": [
             {
                 "usr": "c:@F@inv_Chol#$@N@arma@S@Mat>#d#",
@@ -39,7 +39,7 @@
                 "parent_name": "",
                 "name": "calc_c(arma::mat, arma::mat, double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 40,
+                "line": 41,
                 "column": 11,
                 "hidden": false
             },
@@ -49,7 +49,7 @@
                 "parent_name": "",
                 "name": "calc_C_tilde(arma::mat, arma::mat, double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 58,
+                "line": 60,
                 "column": 11,
                 "hidden": false
             },
@@ -59,7 +59,7 @@
                 "parent_name": "",
                 "name": "logit(double, double, double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 70,
+                "line": 72,
                 "column": 8,
                 "hidden": false
             },
@@ -69,7 +69,7 @@
                 "parent_name": "",
                 "name": "logistic(double, double, double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 74,
+                "line": 76,
                 "column": 8,
                 "hidden": false
             },
@@ -79,7 +79,7 @@
                 "parent_name": "",
                 "name": "par_huvtransf_fwd(double, const arma::mat &)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 78,
+                "line": 80,
                 "column": 8,
                 "hidden": false
             },
@@ -89,7 +89,7 @@
                 "parent_name": "",
                 "name": "par_huvtransf_back(double, const arma::mat &)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 83,
+                "line": 85,
                 "column": 8,
                 "hidden": false
             },
@@ -99,7 +99,7 @@
                 "parent_name": "",
                 "name": "normal_proposal_logitscale(const double &, double, double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 88,
+                "line": 90,
                 "column": 8,
                 "hidden": false
             },
@@ -109,7 +109,7 @@
                 "parent_name": "",
                 "name": "calc_jacobian(double, double, const arma::mat &)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 93,
+                "line": 95,
                 "column": 8,
                 "hidden": false
             },
@@ -119,7 +119,7 @@
                 "parent_name": "",
                 "name": "wGP_log_density(arma::vec, double, arma::mat)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 101,
+                "line": 103,
                 "column": 8,
                 "hidden": false
             },
@@ -129,7 +129,7 @@
                 "parent_name": "",
                 "name": "do_I_accept(double)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-                "line": 114,
+                "line": 116,
                 "column": 6,
                 "hidden": false
             }
@@ -144,7 +144,7 @@
     },
     {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
-        "file_last_write": 1740810659.0,
+        "file_last_write": 1740833255.0,
         "definitions": [
             {
                 "usr": "c:@F@phi_RW#$@N@arma@S@Mat>#d#$@N@arma@S@Col>#d#d#d#d#S0_#",
@@ -152,7 +152,7 @@
                 "parent_name": "",
                 "name": "phi_RW(arma::mat, arma::vec, double, double, double, arma::mat)",
                 "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
-                "line": 17,
+                "line": 5,
                 "column": 8,
                 "hidden": false
             }
@@ -161,7 +161,7 @@
     },
     {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/test_fxns.cpp",
-        "file_last_write": 1740810489.0,
+        "file_last_write": 1740835321.0,
         "definitions": [],
         "hidden": false
     }

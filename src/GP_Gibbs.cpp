@@ -3,21 +3,29 @@
 
 // [[Rcpp::export]]
 Rcpp::List GP_Gibbs(
-    arma::vec Y,               // Response vector
-    arma::mat X,               // Design matrix
-    arma::mat s,               // Spatial locations (n x 2 matrix)
-    arma::mat knots,           // Knot locations (m x 2 matrix)
-    double sigmasq_start,      // Initial value for sigma^2
+    const arma::vec& Y,               // Response vector
+    const arma::mat& X,               // Design matrix
+    const arma::mat& s,               // Spatial locations (n x 2 matrix)
+    const arma::mat& knots,           // Knot locations (m x 2 matrix)
+    arma::mat beta_knots_start,         // Initial value for coefficients: beta 1, ..., beta p
+    arma::vec w_knots_start,          // Initial value for w
+    arma::vec phi_beta_start,       // Initial value for phi: beta 1, ..., beta p
+    double phi_w_start,         // Initial value for phi: w
+    arma::vec sigmasq_beta_start,      // Initial value for sigma^2: beta 1, ..., beta p
+    double sigmsq_w_start,       // Initial value for sigma^2: w
     double tausq_start,        // Initial value for tau^2
-    arma::vec phi_start,       // Initial value for phi
-    arma::vec w_start,         // Initial value for w
-    arma::vec beta_start,      // Initial value for beta
-    double a_r,                // Prior shape parameter for sigma^2
-    double b_r,                // Prior scale parameter for sigma^2
+    const arma::vec& phi_beta_proposal_sd,       // Proposal standard deviation for phi: beta 1, ..., beta p
+    double phi_w_proposal_sd,        // Proposal standard deviation for phi: w
+    const arma::vec& a_beta,                // Prior shape parameter for sigma^2: beta 1, ..., beta p
+    const arma::vec& b_beta,                // Prior scale parameter for sigma^2: beta 1, ..., beta p
+    double a_w,                // Prior shape parameter for sigma^2: w
+    double b_w,               // Prior scale parameter for sigma^2: w
     double a_t,                // Prior shape parameter for tau^2
     double b_t,                // Prior scale parameter for tau^2
-    arma::vec lower,           // Lower bound for phi
-    arma::vec upper,           // Upper bound for phi
+    const arma::vec& lower_beta,           // Lower bound for phi: beta 1, ..., beta p
+    const arma::vec& upper_beta,           // Upper bound for phi: beta 1, ..., beta p
+    const arma::vec& lower_w,             // Lower bound for phi: w
+    const arma::vec& upper_w,             // Upper bound for phi: w
     int mcmc = 1000            // Number of MCMC iterations
 ) {
   int n = Y.n_elem;            // Number of observations
@@ -25,30 +33,47 @@ Rcpp::List GP_Gibbs(
   int m = knots.n_rows;        // Number of knots
   
   // Initialize storage for posterior samples
-  arma::mat beta_samples = arma::zeros(mcmc, p);
+  arma::cube beta_samples = arma::zeros(mcmc, n, p);
   arma::mat w_samples = arma::zeros(mcmc, n);
-  arma::vec sigmasq_samples = arma::zeros(mcmc);
-  arma::vec tausq_samples = arma::zeros(mcmc);
-  arma::mat phi_samples = arma::zeros(mcmc, phi_start.n_elem);
+  arma::mat phi_beta_samples = arma::zeros(mcmc, p); // phi: beta 1, ..., beta p
+  arma::vec phi_w_samples = arma::zeros(mcmc); // phi: w
+  arma::mat sigmasq_beta_samples = arma::zeros(mcmc, p); // sigma^2: beta 1, ..., beta p
+  arma::vec sigmasq_w_samples = arma::zeros(mcmc); // sigma^2: w
+  arma::vec tausq_samples = arma::zeros(mcmc); // tau^2
   
   // Initialize current values
-  arma::vec beta_cur = beta_start;
-  arma::vec w_cur = w_start;
-  double sigmasq_cur = sigmasq_start;
+  arma::mat beta_knots_cur = beta_knots_start;
+  arma::vec w_knots_cur = w_knots_start;
+  arma::vec phi_beta_cur = phi_beta_start;
+  double phi_w_cur = phi_w_start;
+  arma::vec sigmasq_beta_cur = sigmasq_beta_start;
+  double sigmasq_w_cur = sigmsq_w_start;
   double tausq_cur = tausq_start;
-  arma::vec phi_cur = phi_start;
   
-  // Adaptive MCMC for phi
-  arma::mat phi_metrop_sd = 0.05 * arma::eye(phi_start.n_elem, phi_start.n_elem);
-  RAMAdapt phi_adapt(phi_start.n_elem, phi_metrop_sd, 0.234);
+  // Create lower and upper bounds matrices
+  arma::mat phi_beta_bounds = arma::join_horiz(lower_beta, upper_beta);
+  arma::mat phi_w_bounds = arma::join_horiz(lower_w, upper_w);
   
   // Gibbs sampling loop
   for (int i = 0; i < mcmc; i++) {
     // Update phi 
-    phi_cur = phi_RW(knots, w_cur, sigmasq_cur, phi_cur(0), phi_adapt.paramsd, arma::join_horiz(lower, upper));
-    phi_samples.row(i) = phi_cur.t();
+    phi_w_cur = phi_RW(
+      knots, w_knots_cur, sigmasq_w_cur, phi_w_cur, phi_w_proposal_sd, phi_w_bounds
+    );
+    phi_w_samples(i) = phi_w_cur;
     
+    for (int j = 0; j < p; j++) {
+      phi_beta_cur(j) = phi_RW(
+        knots, beta_knots_cur.col(j), sigmasq_beta_cur(j), phi_beta_cur(j), phi_beta_proposal_sd(j), phi_beta_bounds.row(j));
+    }
+    phi_beta_samples.row(i) = phi_beta_cur.t();
+
     // Update beta 
+    for (int j = 0; j < p; j++) {
+      beta_knots_cur.col(j) = update_beta_r(Y, X, sigmasq_beta_cur(j), phi_beta_cur(j), w_knots_cur, tausq_cur, knots);
+    }
+    
+    
    // beta_cur = beta_update(Y, X, tausq_cur, w_cur, V);
   //  beta_samples.row(i) = beta_cur.t();
     
