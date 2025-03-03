@@ -4,7 +4,7 @@ library(ggplot2)
 library(gridExtra)
 
 # Compile and load the C++ functions
-Rcpp::sourceCpp("C:/Users/s-edw/Downloads/svc-main/svc-main/src/beta_update.cpp")
+Rcpp::sourceCpp("GP_Gibbs.cpp")
 
 # Function to calculate covariance matrix
 calc_C_phi <- function(coords, phi) {
@@ -98,8 +98,8 @@ for (i in 2:mcmc) {
   
   #Update beta1
   beta1 <-
-    update_beta(Y, X_1, beta_1_knots, w, knots, sigmasq_1, phi_1, tausq)
-  beta1 <- calc_beta(coords, knots, phi_1, beta1)
+    update_beta_r(Y, X_1, beta_1_knots, w, knots, sigmasq_1, phi_1, tausq)
+  beta1 <- calc_beta_tilde(coords, knots, phi_1, beta1)
   beta1_samples[i] <- beta1
   
   beta_1_knots <-
@@ -107,13 +107,13 @@ for (i in 2:mcmc) {
   
   #Update beta2
   beta2 <-
-    update_beta(Y,  X_2, beta_2_knots, w, knots, sigmasq_2, phi_2, tausq)
-  beta2 <- calc_beta(coords, knots, phi_2, beta2)
+    update_beta_r(Y,  X_2, beta_2_knots, w, knots, sigmasq_2, phi_2, tausq)
+  beta2 <- calc_beta_tilde(coords, knots, phi_2, beta2)
   beta2_samples[i] <- beta2
   
   #Update w
   w_new <-
-    update_w(
+    update_w_s(
       Y,
       cbind(X_1, X_2),
       cbind(beta_1_knots, beta_2_knots),
@@ -122,7 +122,7 @@ for (i in 2:mcmc) {
       tausq,
       knots
     )
-  w_new <- calc_w(coords, knots, phi_w, w_new)
+  w_new <- calc_w_tilde(coords, knots, phi_w, w_new)
   w_samples[i] <- w_new
 }
 
