@@ -1,7 +1,92 @@
 [
     {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/GP_Gibbs.cpp",
+        "file_last_write": 1740930100.0,
+        "definitions": [
+            {
+                "usr": "c:@F@GP_Gibbs#&1$@N@arma@S@Col>#d#&1$@N@arma@S@Mat>#d#S2_#S2_#S3_#S1_#S1_#d#S1_#d#d#S0_#d#S0_#S0_#d#d#d#d#S0_#S0_#S0_#S0_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "GP_Gibbs(const arma::vec &, const arma::mat &, const arma::mat &, const arma::mat &, arma::mat, arma::vec, arma::vec, double, arma::vec, double, double, const arma::vec &, double, const arma::vec &, const arma::vec &, double, double, double, double, const arma::vec &, const arma::vec &, const arma::vec &, const arma::vec &, int)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/GP_Gibbs.cpp",
+                "line": 5,
+                "column": 12,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_beta_r.cpp",
+        "file_last_write": 1740930119.0,
+        "definitions": [
+            {
+                "usr": "c:@F@update_beta_r#d#d#d#&1$@N@arma@S@Mat>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_beta_r(double, double, double, const arma::mat &, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_beta_r.cpp",
+                "line": 8,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_sigma_sq.cpp",
+        "file_last_write": 1740920499.0,
+        "definitions": [
+            {
+                "usr": "c:@F@update_sigma2_r#&1$@N@arma@S@Col>#d#d#d#d#&1$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_sigma2_r(const arma::vec &, double, double, double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_sigma_sq.cpp",
+                "line": 8,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_tau_sq.cpp",
+        "file_last_write": 1740920499.0,
+        "definitions": [
+            {
+                "usr": "c:@F@update_tau2_r#&1$@N@arma@S@Col>#d#&1$@N@arma@S@Mat>#d#S0_#S0_#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_tau2_r(const arma::vec &, const arma::mat &, const arma::vec &, const arma::vec &, double, double)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_tau_sq.cpp",
+                "line": 8,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_w_s.cpp",
+        "file_last_write": 1740920499.0,
+        "definitions": [
+            {
+                "usr": "c:@F@update_w_s#d#d#d#&1$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_w_s(double, double, double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/Update_w_s.cpp",
+                "line": 8,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
-        "file_last_write": 1740833666.0,
+        "file_last_write": 1740924932.0,
         "definitions": [
             {
                 "usr": "c:@F@inv_Chol#$@N@arma@S@Mat>#d#",
@@ -132,6 +217,16 @@
                 "line": 116,
                 "column": 6,
                 "hidden": false
+            },
+            {
+                "usr": "c:@F@phi_RW#&1$@N@arma@S@Mat>#d#&1$@N@arma@S@Col>#d#d#d#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "phi_RW(const arma::mat &, const arma::vec &, double, double, double, const arma::mat &)",
+                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/common_fxns.h",
+                "line": 124,
+                "column": 8,
+                "hidden": false
             }
         ],
         "hidden": false
@@ -144,19 +239,8 @@
     },
     {
         "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
-        "file_last_write": 1740833255.0,
-        "definitions": [
-            {
-                "usr": "c:@F@phi_RW#$@N@arma@S@Mat>#d#$@N@arma@S@Col>#d#d#d#d#S0_#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "phi_RW(arma::mat, arma::vec, double, double, double, arma::mat)",
-                "file": "C:/Users/jonat/OneDrive/Documents/BIOS 815/svc/src/phi_RW.cpp",
-                "line": 5,
-                "column": 8,
-                "hidden": false
-            }
-        ],
+        "file_last_write": 1740924356.0,
+        "definitions": [],
         "hidden": false
     },
     {

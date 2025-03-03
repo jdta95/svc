@@ -158,18 +158,33 @@ double phi_RW(
   return phi_cur;
 }
 
-arma::vec update_beta_r(double tau_square, double sigma_r_square, double phi_r, const arma::mat& Knots, const arma::mat& s) {
+arma::vec update_beta_r(
+    const arma::vec& Y_star,
+    const arma::mat& X_star,
+    const arma::mat& beta_star,
+    const arma::mat& w_star,
+    const arma::mat& Knots,
+    double sigma_r_square,
+    double phi_r,
+    double tau_square
+) {
+  int m = Knots.n_rows;
+  int p = X_star.n_cols;
+  
   // Calculate the covariance matrix K based on the locations and phi_r
-  arma::mat C = calc_C(Knots, phi_r);
+  arma::mat Sigma0 = sigma_r_square * calc_C(Knots, phi_r);
+  arma::mat Sigma0inv = inv_Chol(Sigma0);
   
-  // Calculate the inverse of the covariance matrix using Cholesky decomposition
-  arma::mat C_inv = inv_Chol(C);
+  arma::mat Sigma = tau_square * arma::eye(m, m);
+  arma::mat Sigmainv = inv_Chol(Sigma);
   
-  // Calculate the variance parameter for the posterior distribution
-  arma::mat post_var = inv_Chol(inv_Chol(tau_square * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigma_r_square * C));
+  arma::mat Sigma1 = inv_Chol(Sigma0inv + Sigmainv);
   
-  // Return beta_r
-  return calc_c(s, Knots, phi_r) * C_inv * arma::mvnrnd(arma::zeros(C.n_rows), post_var);
+  arma::vec sumXbeta = arma::sum(X_star % beta_star, 1);
+  
+  arma::vec mu1 = Sigma1 * (Sigmainv * (Y_star - sumXbeta - w_star));
+  
+  arma::vec beta_r_star = arma::mvnrnd(mu1, Sigma1);
 }
 
 
