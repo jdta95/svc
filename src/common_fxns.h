@@ -185,6 +185,8 @@ arma::vec update_beta_r(
   arma::vec mu1 = Sigma1 * (Sigmainv * (Y_star - sumXbeta - w_star));
   
   arma::vec beta_r_star = arma::mvnrnd(mu1, Sigma1);
+
+  return beta_r_star;
 }
 
 
