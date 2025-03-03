@@ -119,4 +119,4 @@ Rcpp::List GP_Gibbs(
   output["tausq_samples"] = tausq_samples;         // tau^2 samples
   
   return output;
-}  
+}   

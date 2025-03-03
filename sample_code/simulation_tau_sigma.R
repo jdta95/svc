@@ -128,7 +128,7 @@ for (i in 2:mcmc) {
 }
 
 
-# Print first few samples
+# Print first few samples    
 cat("First few tau^2 samples:", tau2_samples[1:5], "\n")
 cat("First few sigma^2_1 samples:", sigma2_1_samples[1:5], "\n")
 cat("First few sigma^2_2 samples:", sigma2_2_samples[1:5], "\n")
