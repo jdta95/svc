@@ -158,15 +158,15 @@ double phi_RW(
   return phi_cur;
 }
 
-arma::vec update_beta_r(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_w, double phi_w, double tausq, const arma::mat& knots) {
+arma::vec update_beta_r(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_r, double phi_r, double tausq, const arma::mat& knots) {
   // Calculate the covariance matrix K based on the locations and phi_r
-  arma::mat C = calc_C(Knots, phi_r);
+  arma::mat C = calc_C(knots, phi_r);
   
   // Calculate the inverse of the covariance matrix using Cholesky decomposition
   arma::mat C_inv = inv_Chol(C);
   
   // Calculate the variance parameter for the posterior distribution
-  arma::mat post_var = inv_Chol(inv_Chol(tau_square * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigma_r_square * C));
+  arma::mat post_var = inv_Chol(inv_Chol(tausq * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigmasq_r * C));
   
 // Calculate the mean parameter for the posterior distribution
   arma::vec post_mean = post_var * (C_inv * (Y - X * beta_knots));
