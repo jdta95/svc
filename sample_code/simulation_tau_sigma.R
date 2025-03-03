@@ -6,6 +6,7 @@ library(gridExtra)
 # Compile and load the C++ functions
 Rcpp::sourceCpp("Update_tau_sq.cpp")
 Rcpp::sourceCpp("Update_sigma_sq.cpp")
+Rcpp::sourceCpp("phi_RW.cpp")
 
 # Function to calculate covariance matrix
 calc_C_phi <- function(coords, phi) {
@@ -67,6 +68,7 @@ lat_knots <- lat_knots[seq(1, length(lat_knots), by = k)]
 lon_knots <- unique(lon)
 lon_knots <- lon_knots[seq(1, length(lon_knots), by = k)]
 knots <- as.matrix(expand.grid(lat_knots, lon_knots))
+
 # Prior parameters
 a_t <- 1; b_t <- 1  # Prior for tau^2
 a_r <- 1; b_r <- 1  # Prior for sigma_r^2
@@ -85,16 +87,22 @@ mcmc <- 1000
 tau2_samples <- numeric(mcmc)
 sigma2_1_samples <- numeric(mcmc)
 sigma2_2_samples <- numeric(mcmc)
+phi_1_samples <- numeric(mcmc)
+phi_2_samples <- numeric(mcmc)
 
 # Initial values
 tau2 <- 1  # Initial value for tau^2
 sigma2_1 <- 1  # Initial value for sigma^2_1
 sigma2_2 <- 1  # Initial value for sigma^2_2
+phi_1 <- phi_1  # Initial value for phi_1
+phi_2 <- phi_2  # Initial value for phi_2
 
 # Store initial values in the first iteration
 tau2_samples[1] <- tau2
 sigma2_1_samples[1] <- sigma2_1
 sigma2_2_samples[1] <- sigma2_2
+phi_1_samples[1] <- phi_1
+phi_2_samples[1] <- phi_2
 
 # Gibbs sampling loop
 for (i in 2:mcmc) {
@@ -109,20 +117,27 @@ for (i in 2:mcmc) {
   # Update sigma^2 for beta_2
   sigma2_2 <- update_sigma2_r(beta_2_knots, a_r, b_r, phi_2, knots)
   sigma2_2_samples[i] <- sigma2_2
+  
+  # Update phi_1
+  phi_1 <- phi_RW(knots, beta_1_knots, sigma2_1, phi_1, 0.1, matrix(c(0.1, 10), ncol = 2))
+  phi_1_samples[i] <- phi_1
+  
+  # Update phi_2
+  phi_2 <- phi_RW(knots, beta_2_knots, sigma2_2, phi_2, 0.1, matrix(c(0.1, 10), ncol = 2))
+  phi_2_samples[i] <- phi_2
 }
 
-# Print initial values
-cat("Initial tau^2:", tau2_samples[1], "\n")
-cat("Initial sigma^2_1:", sigma2_1_samples[1], "\n")
-cat("Initial sigma^2_2:", sigma2_2_samples[1], "\n")
 
 # Print first few samples
 cat("First few tau^2 samples:", tau2_samples[1:5], "\n")
 cat("First few sigma^2_1 samples:", sigma2_1_samples[1:5], "\n")
 cat("First few sigma^2_2 samples:", sigma2_2_samples[1:5], "\n")
+cat("First few phi_1 samples:", phi_1_samples[1:5], "\n")
+cat("First few phi_2 samples:", phi_2_samples[1:5], "\n")
 
-# Plot posterior samples
-par(mfrow = c(3, 1))
+
 plot(tau2_samples, type = "l", main = "Trace of tau^2", xlab = "Iteration", ylab = "tau^2")
 plot(sigma2_1_samples, type = "l", main = "Trace of sigma^2 for beta_1", xlab = "Iteration", ylab = "sigma^2_1")
 plot(sigma2_2_samples, type = "l", main = "Trace of sigma^2 for beta_2", xlab = "Iteration", ylab = "sigma^2_2")
+plot(phi_1_samples, type = "l", main = "Trace of phi for beta_1", xlab = "Iteration", ylab = "phi_1")
+plot(phi_2_samples, type = "l", main = "Trace of phi for beta_2", xlab = "Iteration", ylab = "phi_2")
