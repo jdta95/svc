@@ -158,7 +158,7 @@ double phi_RW(
   return phi_cur;
 }
 
-arma::vec update_beta_r(double tau_square, double sigma_r_square, double phi_r, const arma::mat& Knots, const arma::mat& s) {
+arma::vec update_beta_r(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_w, double phi_w, double tausq, const arma::mat& knots) {
   // Calculate the covariance matrix K based on the locations and phi_r
   arma::mat C = calc_C(Knots, phi_r);
   
@@ -168,8 +168,11 @@ arma::vec update_beta_r(double tau_square, double sigma_r_square, double phi_r, 
   // Calculate the variance parameter for the posterior distribution
   arma::mat post_var = inv_Chol(inv_Chol(tau_square * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigma_r_square * C));
   
-  // Return beta_r
-  return calc_c(s, Knots, phi_r) * C_inv * arma::mvnrnd(arma::zeros(C.n_rows), post_var);
+// Calculate the mean parameter for the posterior distribution
+  arma::vec post_mean = post_var * (C_inv * (Y - X * beta_knots));
+  
+  // Sample w_s from the posterior distribution
+  return post_mean + arma::chol(post_var) * arma::randn(C.n_rows);
 }
 
 
