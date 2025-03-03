@@ -71,7 +71,7 @@ Rcpp::List GP_Gibbs(
     
     // Update beta* at knot locations
     for (int j = 0; j < p; j++) {
-      beta_knots_cur.col(j) = update_beta_r(Y, X, beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur, phi_beta_cur, tausq_cur);
+      beta_knots_cur.col(j) = update_beta_r(Y, X, beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur[j], phi_beta_cur[j], tausq_cur);
     }
     
     // Update w* at knot locations
