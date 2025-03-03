@@ -1,0 +1,165 @@
+---
+title: "First runs of GP_Gibbs"
+author: "Justice Akuoko-Frimpong, Jonathan Ta, Edward Shao"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(svc)
+library(ggplot2)
+library(gridExtra)
+```
+
+
+```{r}
+set.seed(123)
+
+calc_C_phi <- function(coords, phi) {
+  n <- nrow(coords)
+  C_phi <- matrix(0, nrow = n, ncol = n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      # Calculate the distance between points i and j
+      C_phi[i, j] <- exp(-0.5 * t(coords[i,] - coords[j,]) %*% (coords[i,] - coords[j,]) / phi)
+    }
+  }
+  return(C_phi)
+}
+
+# Define coordinates
+lat <- seq(0, 10, by = 1)
+lon <- seq(0, 10, by = 1)
+coords <- as.matrix(expand.grid(lat, lon))
+colnames(coords) <- c("lat", "lon")
+n <- nrow(coords)  # Number of observations
+p <- 2             # Number of covariates
+
+# Generating w (spatial random effects)
+sigmasq_w <- 1
+phi_w <- 2
+C_w <- calc_C_phi(coords, phi_w)
+w <- MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+
+# Generating beta's (spatially-varying coefficients)
+sigmasq_1 <- 1
+phi_1 <- 2
+C_1 <- calc_C_phi(coords, phi_1)
+beta_1 <- MASS::mvrnorm(1, rep(0, n), sigmasq_1 * C_1)
+
+sigmasq_2 <- 1
+phi_2 <- 2
+C_2 <- calc_C_phi(coords, phi_2)
+beta_2 <- MASS::mvrnorm(1, rep(0, n), sigmasq_2 * C_2)
+
+# Generating X (covariates)
+X_1 <- rnorm(n, 0, 10)
+X_2 <- rnorm(n, 0, 10)
+
+# Generating epsilon (measurement error)
+tausq <- 0.0001
+epsilon <- rnorm(n, mean = 0, sd = sqrt(tausq))
+
+# Response variable
+Y <- X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+
+# Generate knots
+k <- 3
+lat_knots <- unique(lat)
+lat_knots <- lat_knots[seq(1, length(lat_knots), by = k)]
+lon_knots <- unique(lon)
+lon_knots <- lon_knots[seq(1, length(lon_knots), by = k)]
+knots <- as.matrix(expand.grid(lat_knots, lon_knots))
+
+# Initial values for parameters
+beta_knots_start <- matrix(0, nrow = nrow(knots), ncol = p)
+w_knots_start <- rep(0, nrow(knots))
+phi_beta_start <- rep(1, p)
+phi_w_start <- 1
+sigmasq_beta_start <- rep(1, p)
+sigmasq_w_start <- 1
+tausq_start <- 1
+phi_beta_proposal_sd <- rep(0.1, p)
+phi_w_proposal_sd <- 0.1
+a_beta <- rep(2, p)
+b_beta <- rep(2, p)
+a_w <- 2
+b_w <- 2
+a_t <- 2
+b_t <- 2
+lower_beta <- rep(0.1, p)
+upper_beta <- rep(10, p)
+lower_w <- 0.1
+upper_w <- 10
+
+```
+
+```{r}
+result = GP_Gibbs(
+  Y = Y,                               # Vector of length 121
+  X = cbind(X_1, X_2),                 # Matrix of size 121 x 2
+  s = coords,                          # Matrix of size 121 x 2
+  knots = knots,                       # Matrix of size 16 x 2
+  beta_knots_start = beta_knots_start, # Matrix of size 16 x 2
+  w_knots_start = w_knots_start,       # Vector of length 16
+  phi_beta_start = phi_beta_start,     # Vector of length 2
+  phi_w_start = phi_w_start,           # Scalar
+  sigmasq_beta_start = sigmasq_beta_start, # Vector of length 2
+  sigmasq_w_start = sigmasq_w_start,   # Scalar
+  tausq_start = tausq_start,           # Scalar
+  phi_beta_proposal_sd = phi_beta_proposal_sd, # Vector of length 2
+  phi_w_proposal_sd = phi_w_proposal_sd, # Scalar
+  a_beta = a_beta,                     # Vector of length 2
+  b_beta = b_beta,                     # Vector of length 2
+  a_w = a_w,                           # Scalar
+  b_w = b_w,                           # Scalar
+  a_t = a_t,                           # Scalar
+  b_t = b_t,                           # Scalar
+  lower_beta = lower_beta,             # Vector of length 2
+  upper_beta = upper_beta,             # Vector of length 2
+  lower_w = lower_w,                   # Scalar
+  upper_w = upper_w,                   # Scalar
+  mcmc = 1000                          # Scalar
+)
+# Extract results
+beta_samples = result$beta_samples
+w_samples = result$w_samples
+phi_beta_samples = result$phi_beta_samples
+phi_w_samples = result$phi_w_samples
+sigmasq_beta_samples = result$sigmasq_beta_samples
+sigmasq_w_samples = result$sigmasq_w_samples
+tausq_samples = result$tausq_samples
+
+# Create plots of the results
+beta_1_mean = apply(beta_samples[,,1], 1, mean)
+beta_2_mean = apply(beta_samples[,,2], 1, mean)
+w_mean = apply(w_samples, 1, mean)
+
+beta_1_plot_result = ggplot(data = data.frame(coords, beta_1_mean)) +
+  geom_tile(aes(x = lon, y = lat, fill = beta_1_mean)) +
+  guides(fill = guide_legend(title = "beta_1_mean")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
+beta_2_plot_result = ggplot(data = data.frame(coords, beta_2_mean)) +
+  geom_tile(aes(x = lon, y = lat, fill = beta_2_mean)) +
+  guides(fill = guide_legend(title = "beta_2_mean")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
+w_plot_result = ggplot(data = data.frame(coords, w_mean)) +
+  geom_tile(aes(x = lon, y = lat, fill = w_mean)) +
+  guides(fill = guide_legend(title = "w_mean")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
+# Show all plots in a grid
+grid.arrange(beta_1_plot_result, beta_2_plot_result, w_plot_result, ncol = 3)
+```
