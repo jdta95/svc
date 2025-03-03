@@ -24,4 +24,3 @@
   //return post_mean + arma::chol(post_var) * arma::randn(C.n_rows);
 //}
 
-}

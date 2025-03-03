@@ -222,15 +222,15 @@ arma::vec update_w_s(const arma::vec& Y, const arma::mat& X, const arma::mat& be
 
 
 arma::vec calc_w_tilde(const arma::mat& s, const arma::mat& knots, double phi_w, const arma::vec& w_star) {
-  arma::mat C_tilde = calc_C_tilde(s, knots, phi_w);
-  arma::mat C_inv = inv_Chol(calc_c(s, knots, phi_w));
-  return C_tilde * C_inv * w_star;
+  arma::mat c_transpose = calc_c(s, knots, phi_w).t();
+  arma::mat C_inv = inv_Chol(calc_C(knots, phi_w));
+  return c_transpose * C_inv * w_star;
 }
 
-arma::vec calc_beta_tilde(const arma::mat& s, const arma::mat& knots, double phi_w, const arma::vec& beta_star) {
-  arma::mat C_tilde = calc_C_tilde(s, knots, phi_w);
-  arma::mat C_inv = inv_Chol(calc_c(s, knots, phi_w));
-  return C_tilde * C_inv * beta_star;
+arma::vec calc_beta_tilde(const arma::mat& s, const arma::mat& knots, double phi_beta, const arma::vec& beta_star) {
+  arma::mat c_transpose = calc_c(s, knots, phi_beta).t();
+  arma::mat C_inv = inv_Chol(calc_C(knots, phi_beta));
+  return c_transpose * C_inv * beta_star;
 }
 
 
