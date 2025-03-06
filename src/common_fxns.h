@@ -124,39 +124,39 @@ bool do_I_accept(double logaccept){
 
 // Update functions
 
-//double phi_RW(
-  ///  const arma::mat& knots,
-    //const arma::vec& w_knots, // Use w_knots
-    //double sigmasq_cur,
-    //double phi_cur,
-    //double proposal_sd,
-    //const arma::mat& phi_bounds
-//) {
+double phi_RW(
+    const arma::mat& knots,
+    const arma::vec& w_knots, // Use w_knots
+    double sigmasq_cur,
+    double phi_cur,
+    double proposal_sd,
+    const arma::mat& phi_bounds
+) {
   
-  //double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
-  //  phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
+  double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
+    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
   
-  //arma::mat C_star_cur = calc_C(knots, phi_cur);
-  //arma::mat C_star_alt = calc_C(knots, phi_alt);
+  arma::mat C_star_cur = calc_C(knots, phi_cur);
+  arma::mat C_star_alt = calc_C(knots, phi_alt);
   
   // Calculate the log density of (w | sigma^2, phi)
-  //double curr_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_cur);
-  //double prop_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_alt);
+  double curr_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_cur);
+  double prop_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_alt);
   
   // Calculate the Jacobian of the proposal from transformation
- // double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
+  double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
   
   // Calculate the log acceptance probability
-  //double logaccept = prop_logdens - curr_logdens + jacobian;
+  double logaccept = prop_logdens - curr_logdens + jacobian;
   
-  //bool accepted = do_I_accept(logaccept);
+  bool accepted = do_I_accept(logaccept);
   
-//  if(accepted){
-  //  phi_cur = phi_alt;
-//  }
+  if(accepted){
+    phi_cur = phi_alt;
+}
   
-//  return phi_cur;
-//}
+  return phi_cur;
+}
 
 arma::vec update_beta_r(
     const arma::vec& Y_star,
@@ -189,34 +189,34 @@ arma::vec update_beta_r(
   return beta_r_star;
 }
 
-//double update_sigma2_r(const arma::vec& beta_r, double a_r, double b_r, double phi_r, const arma::mat& Knots) {
+double update_sigma2_r(const arma::vec& beta_r, double a_r, double b_r, double phi_r, const arma::mat& Knots) {
   // Calculate the covariance matrix K based on the locations and phi_r
-  //arma::mat C = calc_C(Knots, phi_r);
+  arma::mat C = calc_C(Knots, phi_r);
   
   // Calculate the inverse of the covariance matrix using Cholesky decomposition
-  //arma::mat C_inv = inv_Chol(C);
+  arma::mat C_inv = inv_Chol(C);
   
   // Calculate (beta_r' C^{-1} beta_r)
-  //double beta_r_sum_square = arma::as_scalar(beta_r.t() * C_inv * beta_r);
+  double beta_r_sum_square = arma::as_scalar(beta_r.t() * C_inv * beta_r);
   
   // Calculate the shape and scale parameters for the inverse gamma distribution
-  //double a_r_post = a_r + beta_r.n_elem / 2.0;
-  //double b_r_post = b_r + beta_r_sum_square / 2.0;
+  double a_r_post = a_r + beta_r.n_elem / 2.0;
+  double b_r_post = b_r + beta_r_sum_square / 2.0;
   
-  // Sample sigma_r^2 from the inverse gamma distribution
-  //return 1.0 / arma::randg(arma::distr_param(a_r_post, 1.0 / b_r_post));
-//}
+   //Sample sigma_r^2 from the inverse gamma distribution
+  return 1.0 / arma::randg(arma::distr_param(a_r_post, 1.0 / b_r_post));
+}
 
 
-//double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::vec& beta, const arma::vec& w, double a_t, double b_t) {
- // arma::vec residual = Y - X * beta - w;
-  //double residual_sum_square = arma::dot(residual, residual);
-//  double a_t_post = a_t + Y.n_elem / 2.0;
-//  double b_t_post = b_t + residual_sum_square / 2.0;
+double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::vec& beta, const arma::vec& w, double a_t, double b_t) {
+  arma::vec residual = Y - X * beta - w;
+  double residual_sum_square = arma::dot(residual, residual);
+  double a_t_post = a_t + Y.n_elem / 2.0;
+  double b_t_post = b_t + residual_sum_square / 2.0;
   
   // Sample tau^2 from the inverse gamma distribution
-//  return 1.0 / arma::randg(arma::distr_param(a_t_post, 1.0 / b_t_post));
-//}
+  return 1.0 / arma::randg(arma::distr_param(a_t_post, 1.0 / b_t_post));
+}
 
 
 arma::vec update_w_s(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_w, double phi_w, double tausq, const arma::mat& knots) {
