@@ -34,7 +34,7 @@ Rcpp::List GP_Gibbs(
   int m = knots.n_rows;               // Number of knots
   
   // Initialize storage for posterior samples
-  arma::cube beta_samples = arma::zeros(mcmc, n, p);  // Real beta at observed locations
+  arma::cube beta_samples = arma::zeros(n, p, mcmc);  // Real beta at observed locations
   arma::mat w_samples = arma::zeros(mcmc, n);         // Real w at observed locations
   // arma::mat beta_knots_samples = arma::zeros(mcmc, m, p); // beta* at knot locations
   // arma::mat w_knots_samples = arma::zeros(mcmc, m);       // w* at knot locations
@@ -71,29 +71,52 @@ Rcpp::List GP_Gibbs(
     }
     phi_beta_samples.row(i) = phi_beta_cur.t();
     
+    std::cout << "Check 10. " << std::endl;
+    
     // Update beta* at knot locations
     for (int j = 0; j < p; j++) {
-      beta_knots_cur.col(j) = update_beta_r(Y_knots, X_knots.col(j), beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur(j), phi_beta_cur(j), tausq_cur);
+      beta_knots_cur.col(j) = update_beta_r(Y_knots, X_knots, beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur(j), phi_beta_cur(j), tausq_cur);
     }
     
     // Update w* at knot locations
-    w_knots_cur = update_w_s(Y, X, beta_knots_cur, sigmasq_w_cur, phi_w_cur, tausq_cur, knots);
+    w_knots_cur = update_w_s(Y_knots, X_knots, beta_knots_cur, sigmasq_w_cur, phi_w_cur, tausq_cur, knots);
     
     // Update sigma^2_beta for each covariate
     for (int j = 0; j < p; j++) {
       sigmasq_beta_cur(j) = update_sigma2_r(beta_knots_cur.col(j), a_beta(j), b_beta(j), phi_beta_cur(j), knots);
     }
     
+    std::cout << "Check 20. " << std::endl;
+    
     // Update sigma^2_w
     sigmasq_w_cur = update_sigma2_r(w_knots_cur, a_w, b_w, phi_w_cur, knots);
     
+    std::cout << "Check 30. " << std::endl;
+    
     // Calculate beta_tilde and w_tilde
-    arma::vec beta_tilde = calc_beta_tilde(s, knots, phi_w_cur, beta_knots_cur);
+    arma::mat beta_tilde = arma::zeros(n, p); // Initialize beta_tilde
+    
+    for (int j = 0; j < p; j++) {
+      // Calculate beta_tilde for each covariate
+      beta_tilde.col(j) = calc_beta_tilde(s, knots, phi_beta_cur(j), beta_knots_cur.col(j));
+    }
+    
+    // arma::vec beta_tilde = calc_beta_tilde(s, knots, phi_w_cur, beta_knots_cur);
+    
+    std::cout << "Check 35. " << std::endl;
+    
     arma::vec w_tilde = calc_w_tilde(s, knots, phi_w_cur, w_knots_cur);
+    
+    std::cout << "Check 40. " << std::endl;
     
     // Store beta_tilde and w_tilde as the new beta and w
     beta_samples.slice(i) = beta_tilde;
+    
+    std::cout << "Check 45. " << std::endl;
+    
     w_samples.row(i) = w_tilde.t();
+    
+    std::cout << "Check 50. " << std::endl;
     
     // Update sigmasq_beta using update_sigma2_r
     for (int j = 0; j < p; j++) {
@@ -101,13 +124,19 @@ Rcpp::List GP_Gibbs(
     }
     sigmasq_beta_samples.row(i) = sigmasq_beta_cur.t();
     
+    std::cout << "Check 60. " << std::endl;
+    
     // Update sigmasq_w using update_sigma2_r
     sigmasq_w_cur = update_sigma2_r(w_knots_cur, a_w, b_w, phi_w_cur, knots);
     sigmasq_w_samples(i) = sigmasq_w_cur;
     
+    std::cout << "Check 70. " << std::endl;
+    
     // Update tau^2 using update_tau2_r
     tausq_cur = update_tau2_r(Y, X, beta_tilde, w_tilde, a_t, b_t);
     tausq_samples(i) = tausq_cur;
+    
+    std::cout << "Check 80. " << std::endl;
   }
   
   // Return posterior samples

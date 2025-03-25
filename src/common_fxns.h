@@ -208,8 +208,8 @@ double update_sigma2_r(const arma::vec& beta_r, double a_r, double b_r, double p
 }
 
 
-double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::vec& beta, const arma::vec& w, double a_t, double b_t) {
-  arma::vec residual = Y - X * beta - w;
+double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::mat& beta, const arma::vec& w, double a_t, double b_t) {
+  arma::vec residual = Y - arma::sum(X % beta, 1) - w;
   double residual_sum_square = arma::dot(residual, residual);
   double a_t_post = a_t + Y.n_elem / 2.0;
   double b_t_post = b_t + residual_sum_square / 2.0;
@@ -220,6 +220,7 @@ double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::vec& be
 
 
 arma::vec update_w_s(const arma::vec& Y, const arma::mat& X, const arma::mat& beta_knots, double sigmasq_w, double phi_w, double tausq, const arma::mat& knots) {
+  
   // Calculate the covariance matrix K based on the locations and phi_w
   arma::mat C = calc_C(knots, phi_w);
   
@@ -230,7 +231,7 @@ arma::vec update_w_s(const arma::vec& Y, const arma::mat& X, const arma::mat& be
   arma::mat post_var = inv_Chol(inv_Chol(tausq * arma::eye(C.n_rows, C.n_rows)) + inv_Chol(sigmasq_w * C));
   
   // Calculate the mean parameter for the posterior distribution
-  arma::vec post_mean = post_var * (C_inv * (Y - X * beta_knots));
+  arma::vec post_mean = post_var * (C_inv * (Y - arma::sum(X % beta_knots, 1)));
   
   // Sample w_s from the posterior distribution
   return post_mean + arma::chol(post_var) * arma::randn(C.n_rows);
@@ -243,9 +244,12 @@ arma::vec calc_w_tilde(const arma::mat& s, const arma::mat& knots, double phi_w,
   return c_transpose * C_inv * w_star;
 }
 
-arma::vec calc_beta_tilde(const arma::mat& s, const arma::mat& knots, double phi_beta, const arma::vec& beta_star) {
+arma::mat calc_beta_tilde(const arma::mat& s, const arma::mat& knots, double phi_beta, const arma::mat& beta_star) {
+  std::cout << "Check 33. " << std::endl;
   arma::mat c_transpose = calc_c(s, knots, phi_beta).t();
+  std::cout << "Check 34. " << std::endl;
   arma::mat C_inv = inv_Chol(calc_C(knots, phi_beta));
+  std::cout << "Check 34.5. " << std::endl;
   return c_transpose * C_inv * beta_star;
 }
 
