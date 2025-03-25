@@ -19,8 +19,8 @@ calc_C_phi = function(coords, phi) {
 
 set.seed(123)
 
-lat = seq(0, 9, by = 1)
-lon = seq(0, 9, by = 1)
+lat = seq(0, 19, by = 1)
+lon = seq(0, 19, by = 1)
 
 coords = as.matrix(expand.grid(lat, lon))
 colnames(coords) = c("lat", "lon")
@@ -38,14 +38,12 @@ w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
 sigmasq_1 = 1
 phi_1 = 2
 C_1 = calc_C_phi(coords, phi_1)
-beta_1_mean = 3
-beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+beta_1 = MASS::mvrnorm(1, rep(0, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 1
 phi_2 = 2
 C_2 = calc_C_phi(coords, phi_2)
-beta_2_mean = -5
-beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+beta_2 = MASS::mvrnorm(1, rep(0, n), sigmasq_2 * C_2)
 
 # generating X
 X_1 = rnorm(n, 0, 10)
@@ -130,6 +128,46 @@ Rcpp::compileAttributes()
 # load in library for testing
 devtools::load_all()
 
+output = svc::GP_Gibbs_phi_test(
+  Y = Y,
+  X = X,
+  s = coords,
+  knots = knots,
+  beta_knots_start = as.matrix(knots_df[, c("beta_1", "beta_2")]),
+  w_knots_start = knots_df$w,
+  phi_beta_start = c(phi_1, phi_2),
+  phi_w_start = l + (u - l) / 2,
+  sigmasq_beta_start = c(sigmasq_1, sigmasq_2),
+  sigmasq_w_start = sigmasq_w,
+  tausq_start = tausq,
+  phi_beta_proposal_sd = rep(0.1, p),
+  phi_w_proposal_sd = 0.1,
+  lower_beta = rep(l, p),
+  upper_beta = rep(u, p),
+  lower_w = l,
+  upper_w = u,
+  mcmc = 1000
+)
+
+start = 100
+end = 1000
+
+# trace plot of phi_w
+plot(y = output$phi_w_samples[start:end], x = start:end, type = "l", main = "Trace plot of phi_w", ylab = "phi_w", xlab = "Iteration")
+mean(output$phi_w_samples[start:end])
+phi_w
+
+# trace plot of phi_beta 1
+plot(y = output$phi_beta_samples[start:end, 1], x = start:end, type = "l", main = "Trace plot of phi_beta_1", ylab = "phi_beta_1", xlab = "Iteration")
+mean(output$phi_beta_samples[start:end, 1])
+phi_1
+
+# trace plot of phi_beta 2
+plot(y = output$phi_beta_samples[start:end, 2], x = start:end, type = "l", main = "Trace plot of phi_beta_2", ylab = "phi_beta_2", xlab = "Iteration")
+mean(output$phi_beta_samples[start:end, 2])
+phi_2
+
+
 output = svc::GP_Gibbs(
   Y = Y,
   X = X,
@@ -158,9 +196,10 @@ output = svc::GP_Gibbs(
 )
 
 dim(output$sigmasq_beta_samples)
-
-# trace plot of sigmasq_w
-plot(output$sigmasq_w_samples, type = "l", main = "Trace plot of sigmasq_w", ylab = "sigmasq_w", xlab = "Iteration")
+output$
+  
+  # trace plot of sigmasq_w
+  plot(output$sigmasq_w_samples, type = "l", main = "Trace plot of sigmasq_w", ylab = "sigmasq_w", xlab = "Iteration")
 mean(output$sigmasq_w_samples[500:1000])
 sigmasq_w
 
@@ -193,13 +232,3 @@ phi_1
 plot(output$phi_beta_samples[, 2], type = "l", main = "Trace plot of phi_beta_2", ylab = "phi_beta_2", xlab = "Iteration")
 mean(output$phi_beta_samples[500:1000, 2])
 phi_2
-
-# trace plot of mean beta 1
-plot(colMeans(output$beta_samples[, 1,]), type = "l", main = "Trace plot of mean_beta_1", ylab = "mean_beta_1", xlab = "Iteration")
-mean(colMeans(output$beta_samples[, 1, 500:1000]))
-beta_1_mean
-
-# trace plot of mean beta 2
-plot(colMeans(output$beta_samples[, 2,]), type = "l", main = "Trace plot of mean_beta_2", ylab = "mean_beta_2", xlab = "Iteration")
-mean(colMeans(output$beta_samples[, 2, 500:1000]))
-beta_2_mean
