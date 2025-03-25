@@ -36,8 +36,8 @@ Rcpp::List GP_Gibbs(
   // Initialize storage for posterior samples
   arma::cube beta_samples = arma::zeros(mcmc, n, p);  // Real beta at observed locations
   arma::mat w_samples = arma::zeros(mcmc, n);         // Real w at observed locations
-  arma::mat beta_knots_samples = arma::zeros(mcmc, m, p); // beta* at knot locations
-  arma::mat w_knots_samples = arma::zeros(mcmc, m);       // w* at knot locations
+  // arma::mat beta_knots_samples = arma::zeros(mcmc, m, p); // beta* at knot locations
+  // arma::mat w_knots_samples = arma::zeros(mcmc, m);       // w* at knot locations
   arma::mat phi_beta_samples = arma::zeros(mcmc, p);  // phi_beta samples
   arma::vec phi_w_samples = arma::zeros(mcmc);        // phi_w samples
   arma::mat sigmasq_beta_samples = arma::zeros(mcmc, p); // sigma^2_beta samples
