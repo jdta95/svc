@@ -52,6 +52,8 @@ Rcpp::List GP_Gibbs(
   arma::vec sigmasq_beta_cur = sigmasq_beta_start;    // Current sigma^2_beta
   double sigmasq_w_cur = sigmasq_w_start;             // Current sigma^2_w
   double tausq_cur = tausq_start;                     // Current tau^2
+  arma::mat X_knots = X.rows(arma::linspace<arma::uvec>(0, n - 1, m));  
+  arma::vec Y_knots = Y.rows(arma::linspace<arma::uvec>(0, n - 1, m));
   
   // Create lower and upper bounds matrices
   arma::mat phi_beta_bounds = arma::join_horiz(lower_beta, upper_beta);
@@ -71,7 +73,7 @@ Rcpp::List GP_Gibbs(
     
     // Update beta* at knot locations
     for (int j = 0; j < p; j++) {
-      beta_knots_cur.col(j) = update_beta_r(Y, X, beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur(j), phi_beta_cur(j), tausq_cur);
+      beta_knots_cur.col(j) = update_beta_r(Y_knots, X_knots.col(j), beta_knots_cur, w_knots_cur, knots, sigmasq_beta_cur(j), phi_beta_cur(j), tausq_cur);
     }
     
     // Update w* at knot locations
