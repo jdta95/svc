@@ -7,14 +7,8 @@ set.seed(123)
 
 calc_C_phi = function(coords, phi) {
   n = nrow(coords)
-  C_phi = matrix(0, nrow = n, ncol = n)
-  for (i in 1:n) {
-    for (j in 1:n) {
-      # Calculate the distance between points i and j
-      C_phi[i, j] = exp(-0.5 * t(coords[i,] - coords[j,]) %*% (coords[i,] - coords[j,]) / phi)
-    }
-  }
-  return(C_phi)
+  dists = as.matrix(dist(coords)) ^ 2
+  C_phi = exp(-0.5 / phi * dists)
 }
 
 set.seed(123)
