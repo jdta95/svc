@@ -189,7 +189,7 @@ arma::vec update_beta_r(
   arma::vec Y_tilde = Y_star - sumXbeta - w_star;
   //arma::vec Y_tilde = beta_star.col(j) % X_star.col(j);
   arma::vec result = Y_tilde % (1 / X_star.col(j));
-  arma::vec mu1 = Sigma1 * (Sigmainv * (Y_tilde));
+  arma::vec mu1 = Sigma1 * (Sigmainv * (result));
   
   arma::vec beta_r_star = arma::mvnrnd(mu1, Sigma1);
   
