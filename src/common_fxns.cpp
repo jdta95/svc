@@ -164,7 +164,8 @@ arma::vec update_beta_r(
     const arma::mat& Knots,
     double sigma_r_square,
     double phi_r,
-    double tau_square
+    double tau_square,
+    int j
 ) {
   int m = Knots.n_rows;
   int p = X_star.n_cols;
@@ -172,15 +173,23 @@ arma::vec update_beta_r(
   // Calculate the covariance matrix K based on the locations and phi_r
   arma::mat Sigma0 = sigma_r_square * calc_C(Knots, phi_r);
   arma::mat Sigma0inv = inv_Chol(Sigma0);
-  
-  arma::mat Sigma = tau_square * arma::eye(m, m);
+  arma::vec squared_col = X_star.col(j) % X_star.col(j);
+  arma::mat Sigma = tau_square * arma::diagmat(1 / (squared_col));
   arma::mat Sigmainv = inv_Chol(Sigma);
   
   arma::mat Sigma1 = inv_Chol(Sigma0inv + Sigmainv);
+  arma::mat X_new = X_star;
+  X_new.shed_col(j); // Removes column j in-place
   
-  arma::vec sumXbeta = arma::sum(X_star % beta_star, 1);
+  arma::mat beta_new = beta_star;
+  beta_new.shed_col(j); // Removes column j in-place
   
-  arma::vec mu1 = Sigma1 * (Sigmainv * (Y_star - sumXbeta - w_star));
+  // Compute sum without column j
+  arma::vec sumXbeta = arma::sum(X_new % beta_new, 1);
+  arma::vec Y_tilde = Y_star - sumXbeta - w_star;
+  //arma::vec Y_tilde = beta_star.col(j) % X_star.col(j);
+  arma::vec result = Y_tilde % (1 / X_star.col(j));
+  arma::vec mu1 = Sigma1 * (Sigmainv * (Y_tilde));
   
   arma::vec beta_r_star = arma::mvnrnd(mu1, Sigma1);
   
