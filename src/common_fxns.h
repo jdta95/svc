@@ -67,7 +67,8 @@ arma::vec update_beta_r(
     const arma::mat& Knots,
     double sigma_r_square,
     double phi_r,
-    double tau_square
+    double tau_square,
+    int j
 );
 
 double update_sigma2_r(
