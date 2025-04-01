@@ -2,11 +2,8 @@
 library(Rcpp)
 library(ggplot2)
 library(gridExtra)
-
-# Compile and load the C++ functions
-Rcpp::sourceCpp("Update_tau_sq.cpp")
-Rcpp::sourceCpp("Update_sigma_sq.cpp")
-Rcpp::sourceCpp("phi_RW.cpp")
+library(MASS)
+library(svc)
 
 # Function to calculate covariance matrix
 calc_C_phi <- function(coords, phi) {
@@ -20,7 +17,6 @@ calc_C_phi <- function(coords, phi) {
   return(C_phi)
 }
 
-set.seed(456)  # Different seed for generating a new dataset
 
 # Simulate new data
 set.seed(123)
@@ -87,57 +83,71 @@ mcmc <- 1000
 tau2_samples <- numeric(mcmc)
 sigma2_1_samples <- numeric(mcmc)
 sigma2_2_samples <- numeric(mcmc)
-phi_1_samples <- numeric(mcmc)
-phi_2_samples <- numeric(mcmc)
 
 # Initial values
 tau2 <- 1  # Initial value for tau^2
 sigma2_1 <- 1  # Initial value for sigma^2_1
 sigma2_2 <- 1  # Initial value for sigma^2_2
-phi_1 <- phi_1  # Initial value for phi_1
-phi_2 <- phi_2  # Initial value for phi_2
 
 # Store initial values in the first iteration
 tau2_samples[1] <- tau2
 sigma2_1_samples[1] <- sigma2_1
 sigma2_2_samples[1] <- sigma2_2
-phi_1_samples[1] <- phi_1
-phi_2_samples[1] <- phi_2
 
-# Gibbs sampling loop
-for (i in 2:mcmc) {
-  # Update tau^2
-  tau2 <- update_tau2_r(Y, cbind(X_1, X_2), beta, w, a_t, b_t)
-  tau2_samples[i] <- tau2
-  
-  # Update sigma^2 for beta_1
-  sigma2_1 <- update_sigma2_r(beta_1_knots, a_r, b_r, phi_1, knots)
-  sigma2_1_samples[i] <- sigma2_1
-  
-  # Update sigma^2 for beta_2
-  sigma2_2 <- update_sigma2_r(beta_2_knots, a_r, b_r, phi_2, knots)
-  sigma2_2_samples[i] <- sigma2_2
-  
-  # Update phi_1
-  phi_1 <- phi_RW(knots, beta_1_knots, sigma2_1, phi_1, 0.1, matrix(c(0.1, 10), ncol = 2))
-  phi_1_samples[i] <- phi_1
-  
-  # Update phi_2
-  phi_2 <- phi_RW(knots, beta_2_knots, sigma2_2, phi_2, 0.1, matrix(c(0.1, 10), ncol = 2))
-  phi_2_samples[i] <- phi_2
+# Run the Gibbs sampler with SCALED data
+output <- svc::GP_Gibbs_test_tau_sigma(
+  Y = Y,
+  X = cbind(X_1, X_2),
+  s = coords,
+  knots = knots,
+  beta_knots_start = as.matrix(knots_df[, c("beta_1", "beta_2")]),
+  w_knots_start = knots_df$w,
+  phi_beta_start = true_phi[1:2],
+  phi_w_start = true_phi[3],
+  sigmasq_beta_start = rep(1, p),
+  sigmasq_w_start = 1,
+  tausq_start = 1,
+  phi_beta_proposal_sd = rep(0.1, p),
+  phi_w_proposal_sd = 0.1,
+  a_beta = rep(3, p),  # More informative priors
+  b_beta = rep(0.1, p),
+  a_w = 3,
+  b_w = 0.1,
+  a_t = 3,             # More informative prior for τ²
+  b_t = 0.1,
+  lower_beta = rep(0.1, p),
+  upper_beta = rep(10, p),
+  lower_w = 0.1,
+  upper_w = 10,
+  mcmc = 5000
+)
+
+
+# Analysis of results
+burnin <- 3000
+samples_keep <- burnin:5000
+# Analysis of results
+burnin <- 3000
+samples_keep <- burnin:5000
+
+# Plot tau^2 convergence
+plot(output$tausq_samples, type = "l", main = "tau^2 samples")
+abline(h = true_tausq, col = "red", lwd = 2)
+cat("True tau^2:", true_tausq, "\nEstimated:", mean(output$tausq_samples[samples_keep]), 
+    "\n95% CI:", quantile(output$tausq_samples[samples_keep], c(0.025, 0.975)), "\n")
+
+# Plot sigma^2_w convergence
+plot(output$sigmasq_w_samples, type = "l", main = "sigma^2_w samples")
+abline(h = true_sigmasq_w, col = "red", lwd = 2)
+cat("True sigma^2_w:", true_sigmasq_w, "\nEstimated:", mean(output$sigmasq_w_samples[samples_keep]),
+    "\n95% CI:", quantile(output$sigmasq_w_samples[samples_keep], c(0.025, 0.975)), "\n")
+
+# Plot sigma^2_beta convergence
+for (j in 1:p) {
+  plot(output$sigmasq_beta_samples[,j], type = "l", 
+       main = paste("sigma^2_beta", j, "samples"))
+  abline(h = true_sigmasq_beta[j], col = "red", lwd = 2)
+  cat(paste0("\nTrue sigma^2_beta[", j, "]:"), true_sigmasq_beta[j], 
+      "\nEstimated:", mean(output$sigmasq_beta_samples[samples_keep,j]),
+      "\n95% CI:", quantile(output$sigmasq_beta_samples[samples_keep,j], c(0.025, 0.975)), "\n")
 }
-
-
-# Print first few samples    
-cat("First few tau^2 samples:", tau2_samples[1:5], "\n")
-cat("First few sigma^2_1 samples:", sigma2_1_samples[1:5], "\n")
-cat("First few sigma^2_2 samples:", sigma2_2_samples[1:5], "\n")
-cat("First few phi_1 samples:", phi_1_samples[1:5], "\n")
-cat("First few phi_2 samples:", phi_2_samples[1:5], "\n")
-
-
-plot(tau2_samples, type = "l", main = "Trace of tau^2", xlab = "Iteration", ylab = "tau^2")
-plot(sigma2_1_samples, type = "l", main = "Trace of sigma^2 for beta_1", xlab = "Iteration", ylab = "sigma^2_1")
-plot(sigma2_2_samples, type = "l", main = "Trace of sigma^2 for beta_2", xlab = "Iteration", ylab = "sigma^2_2")
-plot(phi_1_samples, type = "l", main = "Trace of phi for beta_1", xlab = "Iteration", ylab = "phi_1")
-plot(phi_2_samples, type = "l", main = "Trace of phi for beta_2", xlab = "Iteration", ylab = "phi_2")
