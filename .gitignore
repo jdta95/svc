@@ -5,3 +5,5 @@
 src/*.o
 src/*.so
 src/*.dll
+data/EMIS.NDVI.meshed.123.RData
+data/TEMP.meshed.123.RData
