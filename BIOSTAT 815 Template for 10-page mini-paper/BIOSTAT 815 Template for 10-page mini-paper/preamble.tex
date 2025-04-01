@@ -1,0 +1,142 @@
+\RequirePackage{etoolbox}
+\csdef{input@path}{%
+	%{sty/}% cls, sty files
+	{img/}% eps files
+}%
+
+
+%\documentclass[12pt]{article}
+
+% packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsbsy}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{mathbbol}
+\usepackage{mathrsfs}
+\usepackage{bbm} 
+\usepackage{graphicx,psfrag,epsf}
+\usepackage{enumerate}
+\usepackage{natbib}
+\usepackage{url} 
+\usepackage{float}
+\usepackage[skip=5pt]{caption}
+\usepackage{subcaption}
+\usepackage[normalem]{ulem}
+\usepackage{comment}
+\usepackage{hhline}
+\usepackage{afterpage}
+\usepackage{multirow}
+\usepackage{adjustbox}
+\usepackage{textcomp}
+\usepackage{rotating}
+\usepackage{tabularx}
+\usepackage{xspace}
+\usepackage{xr-hyper}
+\usepackage[colorlinks,citecolor=blue,urlcolor=blue,filecolor=blue,backref=page]{hyperref}
+\usepackage{color,colortbl,soul}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{blkarray}
+\usepackage{tikz}
+\usepackage[boxed, vlined]{algorithm2e}
+\usepackage[T1]{fontenc}
+\usepackage{arydshln}
+\usepackage{scalerel,stackengine}
+%\usepackage[hmargin=1.0in,vmargin=1.0in]{geometry}
+
+% algorithm options
+\SetAlCapSkip{.5em}
+
+% colors
+\definecolor{Gray}{gray}{0.9}
+
+
+\allowdisplaybreaks
+
+% commands
+\makeatletter
+\renewcommand*\env@matrix[1][*\c@MaxMatrixCols c]{%
+	\hskip -\arraycolsep
+	\let\@ifnextchar\new@ifnextchar
+	\array{#1}}
+\makeatother
+
+\newcommand{\iidsim}{\overset{iid}{\sim}} % iid 
+
+\newcommand{\highlight}[1]{%
+	\colorbox{yellow!50}{$\displaystyle#1$}}
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+\newcommand{\matrow}[2]{{#1}\texttt{[{#2},:]}}
+
+\newcommand{\given}{\,|\,}
+
+
+\stackMath
+\newcommand\reallywidehat[1]{%
+	\savestack{\tmpbox}{\stretchto{%
+			\scaleto{%
+				\scalerel*[\widthof{\ensuremath{#1}}]{\kern-.6pt\bigwedge\kern-.6pt}%
+				{\rule[-\textheight/2]{1ex}{\textheight}}%WIDTH-LIMITED BIG WEDGE
+			}{\textheight}% 
+		}{0.5ex}}%
+	\stackon[1pt]{#1}{\tmpbox}%
+}
+
+\makeatletter
+\newcommand*{\addFileDependency}[1]{% argument=file name and extension
+  \typeout{(#1)}
+  \@addtofilelist{#1}
+  \IfFileExists{#1}{}{\typeout{No file #1.}}
+}
+\makeatother
+
+\newcommand*{\myexternaldocument}[1]{%
+    \externaldocument{#1}%
+    \addFileDependency{#1.tex}%
+    \addFileDependency{#1.aux}%
+}
+
+
+\def\mathcolor#1#{\@mathcolor{#1}}
+\def\@mathcolor#1#2#3{%
+	\protect\leavevmode
+	\begingroup
+	\color#1{#2}#3%
+	\endgroup
+}
+
+% symbols
+\renewcommand{\tilde}[1]{\widetilde{#1}}
+
+%\newcommand{\bm}[1]{\mathbf{#1}}
+
+\newcommand*\rot{\rotatebox{60}}
+
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+
+\usepackage{tcolorbox}
+\newtcolorbox[auto counter]{reviewcommentinside}[1][]{box align=center,
+    width=0.9\textwidth,
+    colframe = teal,
+    colback=teal!10,
+    code={\spacingset{0.9}},
+    #1}
+
+\newenvironment{reviewercomment}{%
+\begin{center}
+\begin{reviewcommentinside}\noindent \footnotesize 
+}
+{\end{reviewcommentinside}
+\end{center}}
+
+% draw dag
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+
+\newcommand{\others}{\textrm{---}}
