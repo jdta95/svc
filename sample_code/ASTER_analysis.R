@@ -1,5 +1,4 @@
 library(data.table)
-library(meshed)
 
 # compile package
 Rcpp::compileAttributes()
