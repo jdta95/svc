@@ -3,8 +3,6 @@
 library(ggplot2)
 library(gridExtra)
 
-set.seed(123)
-
 calc_C_phi = function(coords, phi) {
   n = nrow(coords)
   dists = as.matrix(dist(coords)) ^ 2
@@ -35,7 +33,7 @@ C_1 = calc_C_phi(coords, phi_1)
 beta_1 = MASS::mvrnorm(1, rep(0, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 1
-phi_2 = 2
+phi_2 = 4
 C_2 = calc_C_phi(coords, phi_2)
 beta_2 = MASS::mvrnorm(1, rep(0, n), sigmasq_2 * C_2)
 
@@ -113,14 +111,14 @@ X_star = as.matrix(knots_df[, c("X_1", "X_2")])
 
 m = nrow(knots)
 l = 0
-u = 20
+u = 10
 
 # Test function
 
-# compile package
-Rcpp::compileAttributes()
-# load in library for testing
-devtools::load_all()
+# # compile package
+# Rcpp::compileAttributes()
+# # load in library for testing
+# devtools::load_all()
 
 output = svc::GP_Gibbs_phi_test(
   Y = Y,
@@ -129,7 +127,7 @@ output = svc::GP_Gibbs_phi_test(
   knots = knots,
   beta_knots_start = as.matrix(knots_df[, c("beta_1", "beta_2")]),
   w_knots_start = knots_df$w,
-  phi_beta_start = c(phi_1, phi_2),
+  phi_beta_start = rep(l + (u - l) / 2, p),
   phi_w_start = l + (u - l) / 2,
   sigmasq_beta_start = c(sigmasq_1, sigmasq_2),
   sigmasq_w_start = sigmasq_w,
@@ -151,6 +149,19 @@ plot(y = output$phi_w_samples[start:end], x = start:end, type = "l", main = "Tra
 mean(output$phi_w_samples[start:end])
 quantile(output$phi_w_samples[start:end], c(0.025, 0.975))
 phi_w
+
+# trace plot of phi_1
+plot(y = output$phi_beta_samples[start:end, 1], x = start:end, type = "l", main = "Trace plot of phi_1", ylab = "phi_1", xlab = "Iteration")
+mean(output$phi_beta_samples[start:end, 1])
+quantile(output$phi_beta_samples[start:end, 1], c(0.025, 0.975))
+phi_1
+
+# trace plot of phi 2
+plot(y = output$phi_beta_samples[start:end, 2], x = start:end, type = "l", main = "Trace plot of phi_2", ylab = "phi_2", xlab = "Iteration")
+mean(output$phi_beta_samples[start:end, 2])
+quantile(output$phi_beta_samples[start:end, 2], c(0.025, 0.975))
+phi_2
+
 
 # # trace plot of phi_beta 1
 # plot(y = output$phi_beta_samples[start:end, 1], x = start:end, type = "l", main = "Trace plot of phi_beta_1", ylab = "phi_beta_1", xlab = "Iteration")

@@ -101,30 +101,24 @@ double calc_jacobian(double new_param, double param, const arma::mat& set_unif_b
   return jac;
 }
 
-double wGP_log_density(
-    arma::vec w,
+double GP_log_density(
+    arma::vec x, // can be beta or w vector
     double sigmasq,
     arma::mat C_phi
 ) {
   arma::mat Sigma = sigmasq * C_phi;
   
   double log_likelihood =  -0.5 * logdet(Sigma) -
-    0.5 * arma::as_scalar(w.t() * inv_Chol(Sigma) * w);
+    0.5 * arma::as_scalar(x.t() * inv_Chol(Sigma) * x);
   
   return log_likelihood;
-}
-
-bool do_I_accept(double logaccept){
-  double u = arma::randu();
-  bool answer = exp(logaccept) > u;
-  return answer;
 }
 
 // Update functions
 
 double phi_RW(
     const arma::mat& knots,
-    const arma::vec& w_knots, // Use w_knots
+    const arma::vec& x_knots, // can be beta or w vector
     double sigmasq_cur,
     double phi_cur,
     double proposal_sd,
@@ -138,8 +132,8 @@ double phi_RW(
   arma::mat C_star_alt = calc_C(knots, phi_alt);
 
   // Calculate the log density of (w | sigma^2, phi)
-  double curr_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_cur);
-  double prop_logdens = wGP_log_density(w_knots, sigmasq_cur, C_star_alt);
+  double curr_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_cur);
+  double prop_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_alt);
 
   // Calculate the Jacobian of the proposal from transformation
   double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
@@ -154,6 +148,12 @@ double phi_RW(
   }
 
   return phi_cur;
+}
+
+bool do_I_accept(double logaccept){
+  double u = arma::randu();
+  bool answer = exp(logaccept) > u;
+  return answer;
 }
 
 arma::vec update_beta_r(

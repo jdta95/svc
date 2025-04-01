@@ -54,15 +54,16 @@ Rcpp::List GP_Gibbs_phi_test(
 
   // Gibbs sampling loop
   for (int i = 0; i < mcmc; i++) {
+    
     // Update phi_w
     phi_w_cur = phi_RW(knots, w_knots_cur, sigmasq_w_cur, phi_w_cur, phi_w_proposal_sd, phi_w_bounds);
     phi_w_samples(i) = phi_w_cur;
 
-    // // Update phi_beta for each covariate
-    // for (int j = 0; j < p; j++) {
-    //   phi_beta_cur(j) = phi_RW(knots, beta_knots_cur.col(j), sigmasq_beta_cur(j), phi_beta_cur(j), phi_beta_proposal_sd(j), phi_beta_bounds.row(j));
-    // }
-    // phi_beta_samples.row(i) = phi_beta_cur.t();
+    // Update phi_beta for each covariate
+    for (int j = 0; j < p; j++) {
+      phi_beta_cur(j) = phi_RW(knots, beta_knots_cur.col(j), sigmasq_beta_cur(j), phi_beta_cur(j), phi_beta_proposal_sd(j), phi_beta_bounds.row(j));
+    }
+    phi_beta_samples.row(i) = phi_beta_cur.t();
 
     // std::cout << "Check 10. " << std::endl;
     //
@@ -136,7 +137,7 @@ Rcpp::List GP_Gibbs_phi_test(
   Rcpp::List output;
   // output["beta_samples"] = beta_samples;          // Real beta at observed locations
   // output["w_samples"] = w_samples;                // Real w at observed locations
-  // output["phi_beta_samples"] = phi_beta_samples;  // phi_beta samples
+  output["phi_beta_samples"] = phi_beta_samples;  // phi_beta samples
   output["phi_w_samples"] = phi_w_samples;        // phi_w samples
   // output["sigmasq_beta_samples"] = sigmasq_beta_samples; // sigma^2_beta samples
   // output["sigmasq_w_samples"] = sigmasq_w_samples; // sigma^2_w samples
