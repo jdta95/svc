@@ -45,6 +45,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// GP_Gibbs_beta
+Rcpp::List GP_Gibbs_beta(const arma::vec& Y, const arma::mat& X, const arma::mat& s, const arma::mat& knots, arma::mat beta_knots_start, arma::vec w_knots_start, arma::vec phi_beta_start, double phi_w_start, arma::vec sigmasq_beta_start, double sigmasq_w_start, double tausq_start, const arma::vec& phi_beta_proposal_sd, double phi_w_proposal_sd, const arma::vec& a_beta, const arma::vec& b_beta, double a_w, double b_w, double a_t, double b_t, const arma::vec& lower_beta, const arma::vec& upper_beta, const arma::vec& lower_w, const arma::vec& upper_w, int mcmc);
+RcppExport SEXP _svc_GP_Gibbs_beta(SEXP YSEXP, SEXP XSEXP, SEXP sSEXP, SEXP knotsSEXP, SEXP beta_knots_startSEXP, SEXP w_knots_startSEXP, SEXP phi_beta_startSEXP, SEXP phi_w_startSEXP, SEXP sigmasq_beta_startSEXP, SEXP sigmasq_w_startSEXP, SEXP tausq_startSEXP, SEXP phi_beta_proposal_sdSEXP, SEXP phi_w_proposal_sdSEXP, SEXP a_betaSEXP, SEXP b_betaSEXP, SEXP a_wSEXP, SEXP b_wSEXP, SEXP a_tSEXP, SEXP b_tSEXP, SEXP lower_betaSEXP, SEXP upper_betaSEXP, SEXP lower_wSEXP, SEXP upper_wSEXP, SEXP mcmcSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type knots(knotsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type beta_knots_start(beta_knots_startSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w_knots_start(w_knots_startSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type phi_beta_start(phi_beta_startSEXP);
+    Rcpp::traits::input_parameter< double >::type phi_w_start(phi_w_startSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type sigmasq_beta_start(sigmasq_beta_startSEXP);
+    Rcpp::traits::input_parameter< double >::type sigmasq_w_start(sigmasq_w_startSEXP);
+    Rcpp::traits::input_parameter< double >::type tausq_start(tausq_startSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type phi_beta_proposal_sd(phi_beta_proposal_sdSEXP);
+    Rcpp::traits::input_parameter< double >::type phi_w_proposal_sd(phi_w_proposal_sdSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type a_beta(a_betaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type b_beta(b_betaSEXP);
+    Rcpp::traits::input_parameter< double >::type a_w(a_wSEXP);
+    Rcpp::traits::input_parameter< double >::type b_w(b_wSEXP);
+    Rcpp::traits::input_parameter< double >::type a_t(a_tSEXP);
+    Rcpp::traits::input_parameter< double >::type b_t(b_tSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type lower_beta(lower_betaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type upper_beta(upper_betaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type lower_w(lower_wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type upper_w(upper_wSEXP);
+    Rcpp::traits::input_parameter< int >::type mcmc(mcmcSEXP);
+    rcpp_result_gen = Rcpp::wrap(GP_Gibbs_beta(Y, X, s, knots, beta_knots_start, w_knots_start, phi_beta_start, phi_w_start, sigmasq_beta_start, sigmasq_w_start, tausq_start, phi_beta_proposal_sd, phi_w_proposal_sd, a_beta, b_beta, a_w, b_w, a_t, b_t, lower_beta, upper_beta, lower_w, upper_w, mcmc));
+    return rcpp_result_gen;
+END_RCPP
+}
 // GP_Gibbs_phi_test
 Rcpp::List GP_Gibbs_phi_test(const arma::vec& Y, const arma::mat& X, const arma::mat& s, const arma::mat& knots, arma::mat beta_knots_start, arma::vec w_knots_start, arma::vec phi_beta_start, double phi_w_start, arma::vec sigmasq_beta_start, double sigmasq_w_start, double tausq_start, const arma::vec& phi_beta_proposal_sd, double phi_w_proposal_sd, const arma::vec& lower_beta, const arma::vec& upper_beta, const arma::vec& lower_w, const arma::vec& upper_w, int mcmc);
 RcppExport SEXP _svc_GP_Gibbs_phi_test(SEXP YSEXP, SEXP XSEXP, SEXP sSEXP, SEXP knotsSEXP, SEXP beta_knots_startSEXP, SEXP w_knots_startSEXP, SEXP phi_beta_startSEXP, SEXP phi_w_startSEXP, SEXP sigmasq_beta_startSEXP, SEXP sigmasq_w_startSEXP, SEXP tausq_startSEXP, SEXP phi_beta_proposal_sdSEXP, SEXP phi_w_proposal_sdSEXP, SEXP lower_betaSEXP, SEXP upper_betaSEXP, SEXP lower_wSEXP, SEXP upper_wSEXP, SEXP mcmcSEXP) {
@@ -110,6 +144,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_svc_GP_Gibbs", (DL_FUNC) &_svc_GP_Gibbs, 24},
+    {"_svc_GP_Gibbs_beta", (DL_FUNC) &_svc_GP_Gibbs_beta, 24},
     {"_svc_GP_Gibbs_phi_test", (DL_FUNC) &_svc_GP_Gibbs_phi_test, 18},
     {"_svc_GP_Gibbs_test_tau_sigma", (DL_FUNC) &_svc_GP_Gibbs_test_tau_sigma, 24},
     {NULL, NULL, 0}

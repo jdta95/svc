@@ -22,6 +22,176 @@ double logdet(
   return logdet;
 }
 
+double logit(double x, double l, double u){
+  return -log( (u-l)/(x-l) -1.0 );
+}
+
+double logistic(double x, double l, double u){
+  return l + (u-l)/(1.0+exp(-x));
+}
+
+double par_huvtransf_fwd(double par, const arma::mat& set_unif_bounds){
+  par = logit(par, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
+  return par;
+}
+
+double par_huvtransf_back(double par, const arma::mat& set_unif_bounds){
+  par = logistic(par, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
+  return par;
+}
+
+double normal_proposal_logitscale(const double& x, double l, double u){
+  //return x - 2 * log(1 + exp(x));
+  return -log(u-x) - log(x-l);
+}
+
+double calc_jacobian(double new_param, double param, const arma::mat& set_unif_bounds){
+  // logit normal proposal
+  double jac = normal_proposal_logitscale(param, set_unif_bounds(0, 0), set_unif_bounds(0, 1)) -
+    normal_proposal_logitscale(new_param, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
+  
+  return jac;
+}
+
+double GP_log_density(
+    arma::vec x, // can be beta or w vector
+    double sigmasq,
+    arma::mat C_phi
+) {
+  arma::mat Sigma = sigmasq * C_phi;
+  
+  double log_likelihood =  -0.5 * logdet(Sigma) -
+    0.5 * arma::as_scalar(x.t() * inv_Chol(Sigma) * x);
+  
+  return log_likelihood;
+}
+
+bool do_I_accept(double logaccept){
+  double u = arma::randu();
+  bool answer = exp(logaccept) > u;
+  return answer;
+}
+
+phi_beta::phi_beta(
+    int mcmc,
+    int p
+) {
+  samples = arma::zeros(mcmc + 1, p);
+  acceptance = arma::zeros(mcmc + 1, p);
+}
+
+void phi_beta::RWupdate(
+    int i,
+    int j,
+    const arma::mat& knots,
+    const arma::vec& x_knots, // can be beta or w vector
+    double sigmasq_cur,
+    double phi_cur,
+    double proposal_sd,
+    const arma::mat& phi_bounds
+) {
+  double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
+    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
+
+  arma::mat C_star_cur = calc_C(knots, phi_cur);
+  arma::mat C_star_alt = calc_C(knots, phi_alt);
+
+  // Calculate the log density of (w | sigma^2, phi)
+  double curr_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_cur);
+  double prop_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_alt);
+
+  // Calculate the Jacobian of the proposal from transformation
+  double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
+
+  // Calculate the log acceptance probability
+  double logaccept = prop_logdens - curr_logdens + jacobian;
+
+  bool accepted = do_I_accept(logaccept);
+
+  if(accepted){
+    phi_cur = phi_alt;
+    acceptance(i, j) = 1;
+  }
+
+  samples(i, j) = phi_cur;
+}
+
+phi_w::phi_w(
+  int mcmc
+) {
+  samples = arma::zeros(mcmc + 1);
+  acceptance = arma::zeros(mcmc + 1);
+}
+
+void phi_w::RWupdate(
+    int i,
+    const arma::mat& knots,
+    const arma::vec& x_knots, // can be beta or w vector
+    double sigmasq_cur,
+    double phi_cur,
+    double proposal_sd,
+    const arma::mat& phi_bounds
+) {
+  double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
+    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
+  
+  arma::mat C_star_cur = calc_C(knots, phi_cur);
+  arma::mat C_star_alt = calc_C(knots, phi_alt);
+  
+  // Calculate the log density of (w | sigma^2, phi)
+  double curr_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_cur);
+  double prop_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_alt);
+  
+  // Calculate the Jacobian of the proposal from transformation
+  double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
+  
+  // Calculate the log acceptance probability
+  double logaccept = prop_logdens - curr_logdens + jacobian;
+  
+  bool accepted = do_I_accept(logaccept);
+  
+  if(accepted){
+    phi_cur = phi_alt;
+    acceptance(i) = 1;
+  }
+  
+  samples(i) = phi_cur;
+}
+
+double phi_RW(
+    const arma::mat& knots,
+    const arma::vec& x_knots, // can be beta or w vector
+    double sigmasq_cur,
+    double phi_cur,
+    double proposal_sd,
+    const arma::mat& phi_bounds
+) {
+  
+  double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
+    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
+  
+  arma::mat C_star_cur = calc_C(knots, phi_cur);
+  arma::mat C_star_alt = calc_C(knots, phi_alt);
+  
+  // Calculate the log density of (w | sigma^2, phi)
+  double curr_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_cur);
+  double prop_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_alt);
+  
+  // Calculate the Jacobian of the proposal from transformation
+  double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
+  
+  // Calculate the log acceptance probability
+  double logaccept = prop_logdens - curr_logdens + jacobian;
+  
+  bool accepted = do_I_accept(logaccept);
+  
+  if(accepted){
+    phi_cur = phi_alt;
+  }
+  
+  return phi_cur;
+}
+
 arma::mat calc_C(
     arma::mat s,
     double phi
@@ -70,91 +240,7 @@ arma::mat calc_C_tilde(
   return C_tilde;
 }
 
-double logit(double x, double l, double u){
-  return -log( (u-l)/(x-l) -1.0 );
-}
-
-double logistic(double x, double l, double u){
-  return l + (u-l)/(1.0+exp(-x));
-}
-
-double par_huvtransf_fwd(double par, const arma::mat& set_unif_bounds){
-  par = logit(par, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
-  return par;
-}
-
-double par_huvtransf_back(double par, const arma::mat& set_unif_bounds){
-  par = logistic(par, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
-  return par;
-}
-
-double normal_proposal_logitscale(const double& x, double l, double u){
-  //return x - 2 * log(1 + exp(x));
-  return -log(u-x) - log(x-l);
-}
-
-double calc_jacobian(double new_param, double param, const arma::mat& set_unif_bounds){
-  // logit normal proposal
-  double jac = normal_proposal_logitscale(param, set_unif_bounds(0, 0), set_unif_bounds(0, 1)) -
-    normal_proposal_logitscale(new_param, set_unif_bounds(0, 0), set_unif_bounds(0, 1));
-  
-  return jac;
-}
-
-double GP_log_density(
-    arma::vec x, // can be beta or w vector
-    double sigmasq,
-    arma::mat C_phi
-) {
-  arma::mat Sigma = sigmasq * C_phi;
-  
-  double log_likelihood =  -0.5 * logdet(Sigma) -
-    0.5 * arma::as_scalar(x.t() * inv_Chol(Sigma) * x);
-  
-  return log_likelihood;
-}
-
 // Update functions
-
-double phi_RW(
-    const arma::mat& knots,
-    const arma::vec& x_knots, // can be beta or w vector
-    double sigmasq_cur,
-    double phi_cur,
-    double proposal_sd,
-    const arma::mat& phi_bounds
-) {
-
-  double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
-    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
-
-  arma::mat C_star_cur = calc_C(knots, phi_cur);
-  arma::mat C_star_alt = calc_C(knots, phi_alt);
-
-  // Calculate the log density of (w | sigma^2, phi)
-  double curr_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_cur);
-  double prop_logdens = GP_log_density(x_knots, sigmasq_cur, C_star_alt);
-
-  // Calculate the Jacobian of the proposal from transformation
-  double jacobian  = calc_jacobian(phi_alt, phi_cur, phi_bounds);
-
-  // Calculate the log acceptance probability
-  double logaccept = prop_logdens - curr_logdens + jacobian;
-
-  bool accepted = do_I_accept(logaccept);
-
-  if(accepted){
-    phi_cur = phi_alt;
-  }
-
-  return phi_cur;
-}
-
-bool do_I_accept(double logaccept){
-  double u = arma::randu();
-  bool answer = exp(logaccept) > u;
-  return answer;
-}
 
 arma::vec update_beta_r(
     const arma::vec& Y_star,

@@ -124,6 +124,8 @@ Rcpp::compileAttributes()
 # load in library for testing
 devtools::load_all()
 
+mcmc = 10000
+
 output = svc::GP_Gibbs(
   Y = Y,
   X = X,
@@ -148,52 +150,62 @@ output = svc::GP_Gibbs(
   upper_beta = rep(u, p),
   lower_w = l,
   upper_w = u,
-  mcmc = 1000
+  mcmc = mcmc
 )
+
+start = mcmc * 0.5
+end = mcmc
 
 dim(output$sigmasq_beta_samples)
 
 # trace plot of sigmasq_w
 plot(output$sigmasq_w_samples, type = "l", main = "Trace plot of sigmasq_w", ylab = "sigmasq_w", xlab = "Iteration")
-mean(output$sigmasq_w_samples[500:1000])
+mean(output$sigmasq_w_samples[start:end])
 sigmasq_w
 
 # trace plot of phi_w
 plot(output$phi_w_samples, type = "l", main = "Trace plot of phi_w", ylab = "phi_w", xlab = "Iteration")
-mean(output$phi_w_samples[500:1000])
+mean(output$phi_w_samples[start:end])
 phi_w
+
+mean(output$phi_w_acceptance)
 
 # trace plot of tausq
 plot(output$tausq_samples, type = "l", main = "Trace plot of tausq", ylab = "tausq", xlab = "Iteration")
-mean(output$tausq_samples[500:1000])
+mean(output$tausq_samples[start:end])
 tausq
 
 # trace plot of sigmasq_beta 1
 plot(output$sigmasq_beta_samples[, 1], type = "l", main = "Trace plot of sigmasq_beta_1", ylab = "sigmasq_beta_1", xlab = "Iteration")
-mean(output$sigmasq_beta_samples[500:1000, 1])
+mean(output$sigmasq_beta_samples[start:end, 1])
 sigmasq_1
 
 # trace plot of sigmasq_beta 2
 plot(output$sigmasq_beta_samples[, 2], type = "l", main = "Trace plot of sigmasq_beta_2", ylab = "sigmasq_beta_2", xlab = "Iteration")
-mean(output$sigmasq_beta_samples[500:1000, 2])
+mean(output$sigmasq_beta_samples[start:end, 2])
 sigmasq_2
 
 # trace plot of phi_beta 1
 plot(output$phi_beta_samples[, 1], type = "l", main = "Trace plot of phi_beta_1", ylab = "phi_beta_1", xlab = "Iteration")
-mean(output$phi_beta_samples[500:1000, 1])
+mean(output$phi_beta_samples[start:end, 1])
 phi_1
+
+mean(output$phi_beta_acceptance[, 1])
 
 # trace plot of phi_beta 2
 plot(output$phi_beta_samples[, 2], type = "l", main = "Trace plot of phi_beta_2", ylab = "phi_beta_2", xlab = "Iteration")
-mean(output$phi_beta_samples[500:1000, 2])
+mean(output$phi_beta_samples[start:end, 2])
 phi_2
+
+mean(output$phi_beta_acceptance[, 2])
 
 # trace plot of mean beta 1
 plot(colMeans(output$beta_samples[, 1,]), type = "l", main = "Trace plot of mean_beta_1", ylab = "mean_beta_1", xlab = "Iteration")
-mean(colMeans(output$beta_samples[, 1, 500:1000]))
+mean(colMeans(output$beta_samples[, 1, start:end]))
 beta_1_mean
 
 # trace plot of mean beta 2
 plot(colMeans(output$beta_samples[, 2,]), type = "l", main = "Trace plot of mean_beta_2", ylab = "mean_beta_2", xlab = "Iteration")
-mean(colMeans(output$beta_samples[, 2, 500:1000]))
+mean(colMeans(output$beta_samples[, 2, start:end]))
 beta_2_mean
+

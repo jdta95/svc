@@ -28,12 +28,12 @@ w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
 
 # generating beta's
 sigmasq_1 = 1
-phi_1 = 2
+phi_1 = 3
 C_1 = calc_C_phi(coords, phi_1)
 beta_1 = MASS::mvrnorm(1, rep(0, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 1
-phi_2 = 4
+phi_2 = 5
 C_2 = calc_C_phi(coords, phi_2)
 beta_2 = MASS::mvrnorm(1, rep(0, n), sigmasq_2 * C_2)
 
@@ -111,14 +111,16 @@ X_star = as.matrix(knots_df[, c("X_1", "X_2")])
 
 m = nrow(knots)
 l = 0
-u = 10
+u = 15
 
 # Test function
 
-# # compile package
-# Rcpp::compileAttributes()
-# # load in library for testing
-# devtools::load_all()
+# compile package
+Rcpp::compileAttributes()
+# load in library for testing
+devtools::load_all()
+
+mcmc = 5000
 
 output = svc::GP_Gibbs_phi_test(
   Y = Y,
@@ -132,32 +134,37 @@ output = svc::GP_Gibbs_phi_test(
   sigmasq_beta_start = c(sigmasq_1, sigmasq_2),
   sigmasq_w_start = sigmasq_w,
   tausq_start = tausq,
-  phi_beta_proposal_sd = rep(0.1, p),
-  phi_w_proposal_sd = 0.2,
+  phi_beta_proposal_sd = rep(5, p),
+  phi_w_proposal_sd = 5,
   lower_beta = rep(l, p),
   upper_beta = rep(u, p),
   lower_w = l,
   upper_w = u,
-  mcmc = 5000
+  mcmc = mcmc
 )
 
-start = 3000
-end = 5000
+start = mcmc * 0.5
+end = mcmc
+
+output$phi_w_samples[output$phi_w_acceptance == 0]
 
 # trace plot of phi_w
 plot(y = output$phi_w_samples[start:end], x = start:end, type = "l", main = "Trace plot of phi_w", ylab = "phi_w", xlab = "Iteration")
+mean(output$phi_w_acceptance[start:end])
 mean(output$phi_w_samples[start:end])
 quantile(output$phi_w_samples[start:end], c(0.025, 0.975))
 phi_w
 
 # trace plot of phi_1
 plot(y = output$phi_beta_samples[start:end, 1], x = start:end, type = "l", main = "Trace plot of phi_1", ylab = "phi_1", xlab = "Iteration")
+mean(output$phi_beta_acceptance[start:end, 1])
 mean(output$phi_beta_samples[start:end, 1])
 quantile(output$phi_beta_samples[start:end, 1], c(0.025, 0.975))
 phi_1
 
 # trace plot of phi 2
 plot(y = output$phi_beta_samples[start:end, 2], x = start:end, type = "l", main = "Trace plot of phi_2", ylab = "phi_2", xlab = "Iteration")
+mean(output$phi_beta_acceptance[start:end, 2])
 mean(output$phi_beta_samples[start:end, 2])
 quantile(output$phi_beta_samples[start:end, 2], c(0.025, 0.975))
 phi_2

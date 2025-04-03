@@ -31,8 +31,8 @@ Rcpp::List GP_Gibbs_phi_test(
   // arma::mat w_samples = arma::zeros(mcmc, n);         // Real w at observed locations
   // arma::mat beta_knots_samples = arma::zeros(mcmc, m, p); // beta* at knot locations
   // arma::mat w_knots_samples = arma::zeros(mcmc, m);       // w* at knot locations
-  arma::mat phi_beta_samples = arma::zeros(mcmc, p);  // phi_beta samples
-  arma::vec phi_w_samples = arma::zeros(mcmc);        // phi_w samples
+  phi_beta phi_beta(mcmc, p);  // phi_beta samples
+  phi_w phi_w(mcmc);          // phi_w samples
   // arma::mat sigmasq_beta_samples = arma::zeros(mcmc, p); // sigma^2_beta samples
   // arma::vec sigmasq_w_samples = arma::zeros(mcmc);    // sigma^2_w samples
   // arma::vec tausq_samples = arma::zeros(mcmc);        // tau^2 samples
@@ -40,8 +40,8 @@ Rcpp::List GP_Gibbs_phi_test(
   // Initialize current values
   arma::mat beta_knots_cur = beta_knots_start;        // Current beta* at knots
   arma::vec w_knots_cur = w_knots_start;              // Current w* at knots
-  arma::vec phi_beta_cur = phi_beta_start;            // Current phi_beta
-  double phi_w_cur = phi_w_start;                     // Current phi_w
+  phi_beta.samples.row(0) = phi_beta_start.t();            // Current phi_beta
+  phi_w.samples(0) = phi_w_start;                     // Current phi_w
   arma::vec sigmasq_beta_cur = sigmasq_beta_start;    // Current sigma^2_beta
   double sigmasq_w_cur = sigmasq_w_start;             // Current sigma^2_w
   double tausq_cur = tausq_start;                     // Current tau^2
@@ -54,16 +54,19 @@ Rcpp::List GP_Gibbs_phi_test(
 
   // Gibbs sampling loop
   for (int i = 0; i < mcmc; i++) {
-    
-    // Update phi_w
-    phi_w_cur = phi_RW(knots, w_knots_cur, sigmasq_w_cur, phi_w_cur, phi_w_proposal_sd, phi_w_bounds);
-    phi_w_samples(i) = phi_w_cur;
 
+    // Update phi_w
+    phi_w.RWupdate(i + 1, knots, w_knots_cur, sigmasq_w_cur, phi_w.samples(i), phi_w_proposal_sd, phi_w_bounds);
+
+    // print message
+    Rcpp::Rcout << "Good w update. " << std::endl;
+    
     // Update phi_beta for each covariate
     for (int j = 0; j < p; j++) {
-      phi_beta_cur(j) = phi_RW(knots, beta_knots_cur.col(j), sigmasq_beta_cur(j), phi_beta_cur(j), phi_beta_proposal_sd(j), phi_beta_bounds.row(j));
+      phi_beta.RWupdate(i + 1, j, knots, beta_knots_cur.col(j), sigmasq_beta_cur(j), phi_beta.samples(i, j), phi_beta_proposal_sd(j), phi_beta_bounds.row(j));
     }
-    phi_beta_samples.row(i) = phi_beta_cur.t();
+    
+    Rcpp::Rcout << "Good beta update. " << std::endl;
 
     // std::cout << "Check 10. " << std::endl;
     //
@@ -132,13 +135,43 @@ Rcpp::List GP_Gibbs_phi_test(
     //
     // std::cout << "Check 80. " << std::endl;
   }
+  
+  phi_beta.samples.shed_row(0);
+  
+  Rcpp::Rcout << "Check 1. " << std::endl;
+  
+  phi_beta.acceptance.shed_row(0);
+  
+  Rcpp::Rcout << "Check 1. " << std::endl;
+  
+  phi_w.samples.shed_row(0);
+  
+  Rcpp::Rcout << "Check 1. " << std::endl;
+  
+  phi_w.acceptance.shed_row(0);
+  
+  Rcpp::Rcout << "Check 1. " << std::endl;
 
   // Return posterior samples
   Rcpp::List output;
   // output["beta_samples"] = beta_samples;          // Real beta at observed locations
   // output["w_samples"] = w_samples;                // Real w at observed locations
-  output["phi_beta_samples"] = phi_beta_samples;  // phi_beta samples
-  output["phi_w_samples"] = phi_w_samples;        // phi_w samples
+  output["phi_beta_samples"] = phi_beta.samples;  // phi_beta samples
+  
+  Rcpp::Rcout << "Check 1. " << std::endl;
+  
+  output["phi_w_samples"] = phi_w.samples;        // phi_w samples
+  
+  Rcpp::Rcout << "Check 2. " << std::endl;
+  
+  output["phi_beta_acceptance"] = phi_beta.acceptance; // phi_beta acceptance rates
+  
+  Rcpp::Rcout << "Check 3. " << std::endl;
+  
+  output["phi_w_acceptance"] = phi_w.acceptance;       // phi_w acceptance rates
+  
+  Rcpp::Rcout << "Check 4. " << std::endl;
+  
   // output["sigmasq_beta_samples"] = sigmasq_beta_samples; // sigma^2_beta samples
   // output["sigmasq_w_samples"] = sigmasq_w_samples; // sigma^2_w samples
   // output["tausq_samples"] = tausq_samples;         // tau^2 samples

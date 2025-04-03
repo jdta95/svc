@@ -3,6 +3,48 @@
 
 #include <RcppArmadillo.h>
 
+class phi_beta {
+public:
+  arma::mat samples;
+  arma::mat acceptance;
+  
+  phi_beta(
+    int p,
+    int mcmc
+  );
+  
+  void RWupdate(
+    int i,
+    int j,
+    const arma::mat& knots,
+    const arma::vec& x_knots, // can be beta or w vector
+    double sigmasq_cur,
+    double phi_cur,
+    double proposal_sd,
+    const arma::mat& phi_bounds
+  );
+};
+
+class phi_w {
+public:
+  arma::vec samples;
+  arma::vec acceptance;
+  
+  phi_w(
+    int mcmc
+  );
+  
+  void RWupdate(
+      int i,
+      const arma::mat& knots,
+      const arma::vec& x_knots, // can be beta or w vector
+      double sigmasq_cur,
+      double phi_cur,
+      double proposal_sd,
+      const arma::mat& phi_bounds
+  );
+};
+
 arma::mat inv_Chol(
     arma::mat A
 );
