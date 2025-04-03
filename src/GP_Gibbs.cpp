@@ -8,7 +8,7 @@ Rcpp::List GP_Gibbs(
     const arma::mat& X,               // Design matrix
     const arma::mat& s,               // Spatial locations (n x 2 matrix)
     const arma::mat& knots,           // Knot locations (m x 2 matrix)
-    const arma::mat& Y_knots,        // Response vector at knot locations (m x 1)
+    const arma::vec& Y_knots,        // Response vector at knot locations (m x 1)
     const arma::mat& X_knots,         // Design matrix at knot locations (m x p)
     arma::mat beta_knots_start,       // Initial value for coefficients: beta 1, ..., beta p
     arma::vec w_knots_start,          // Initial value for w
