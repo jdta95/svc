@@ -1,0 +1,403 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-11-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# path where data is kept and saved
+path_data = "/data/"
+
+# path for tables and figures
+path_tabfig =
+  "/tables figures/"
+```
+
+
+```{r}
+library(rhdf5)
+library(data.table)
+library(ggplot2)
+library(gridExtra)
+library(geoR)
+```
+
+```{r}
+# Read in ASTER data
+file = "AG100.v003.41.-109.0001.h5"
+
+emis.list = h5read(
+  paste0(path_data, file),
+  name = "Emissivity"
+)
+
+# select data for Band 10 (8.3 micrometers) emissivity
+emis.list$Mean = emis.list$Mean[, , 1]
+emis.list$SDev = emis.list$SDev[, , 1]
+
+coords = h5read(
+  paste0(path_data, file),
+  name = "Geolocation"
+)
+
+elev = h5read(
+  paste0(path_data, file),
+  name = "ASTER GDEM"
+)
+
+ndvi.list = h5read(
+  paste0(path_data, file),
+  name = "NDVI"
+)
+
+temp.list = h5read(
+  paste0(path_data, file),
+  name = "Temperature"
+)
+```
+
+```{r}
+lat = as.vector(coords$Latitude)
+lon = as.vector(coords$Longitude)
+elev = as.vector(elev$ASTGDEM)
+emis = as.vector(emis.list$Mean)
+emis.sd = as.vector(emis.list$SDev)
+ndvi = as.vector(ndvi.list$Mean)
+ndvi.sd = as.vector(ndvi.list$SDev)
+temp = as.vector(temp.list$Mean)
+temp.sd = as.vector(temp.list$SDev)
+
+dt = data.table(
+  lat = lat,
+  lon = lon,
+  elev = elev,
+  emis = emis,
+  emis.sd = emis.sd,
+  ndvi = ndvi,
+  ndvi.sd = ndvi.sd,
+  temp = temp,
+  temp.sd = temp.sd
+)
+
+setorder(dt, "lat", "lon")
+```
+
+```{r}
+dt[elev == -9999, elev := NA]
+dt[emis == -9999, emis := NA]
+dt[emis.sd == -9999, emis.sd := NA]
+dt[ndvi == -9999, ndvi := NA]
+dt[ndvi.sd == -9999, ndvi.sd := NA]
+dt[temp == -9999, temp := NA]
+dt[temp.sd == -9999, temp.sd := NA]
+
+dt[, emis := emis * 0.001]
+dt[, emis.sd := emis.sd * 0.0001]
+dt[, ndvi := ndvi * 0.01]
+dt[, ndvi.sd := ndvi.sd * 0.01]
+dt[, temp := temp * 0.01]
+dt[, temp.sd := temp.sd * 0.01]
+```
+
+```{r}
+summary(dt)
+```
+
+```{r}
+# subset data for meshed analysis
+lat.sub = dt[, unique(lat)]
+lat.sub = lat.sub[seq(1, length(lat.sub), by = 3)]
+
+lon.sub = dt[, unique(lon)]
+lon.sub = lon.sub[seq(1, length(lon.sub), by = 3)]
+
+dt = dt[lat %in% lat.sub & lon %in% lon.sub]
+```
+
+
+```{r}
+# map emis, ndvi, and elev
+emis.map = ggplot(dt, aes(lon, lat)) +
+  geom_tile(aes(fill = emis)) + 
+  xlab("longitude") +
+  ylab("latitude") +
+  guides(fill = guide_legend(title = "emissivity")) +
+  coord_fixed()
+
+ndvi.map = ggplot(dt, aes(lon, lat)) +
+  geom_tile(aes(fill = ndvi)) + 
+  xlab("longitude") +
+  ylab("latitude") +
+  guides(fill = guide_legend(title = "NDVI")) +
+  coord_fixed()
+
+elev.map = ggplot(dt, aes(lon, lat)) +
+  geom_tile(aes(fill = elev)) + 
+  xlab("longitude") +
+  ylab("latitude") +
+  guides(fill = guide_legend(title = "elevation")) +
+  coord_fixed()
+
+png(
+  filename = paste0(path_tabfig, "EMIS.NDVI.ELEV.map.png"),
+  width = 1620,
+  height = 540
+)
+
+grid.arrange(emis.map, ndvi.map, elev.map, nrow = 1, ncol = 3)
+
+dev.off()
+```
+
+```{r}
+# map temp and elev
+temp.map = ggplot(dt, aes(lon, lat)) +
+  geom_tile(aes(fill = temp)) + 
+  xlab("longitude") +
+  ylab("latitude") +
+  guides(fill = guide_legend(title = "temp")) +
+  coord_fixed()
+
+png(
+  filename = paste0(path_tabfig, "TEMP.ELEV.map.png"),
+  width = 1080,
+  height = 540
+)
+
+grid.arrange(temp.map, elev.map, nrow = 1, ncol = 2)
+
+dev.off()
+```
+
+```{r}
+# subset data further for more efficient semivariogram analysis
+lat.sub = dt[, unique(lat)]
+lat.sub = lat.sub[seq(1, length(lat.sub), by = 2)]
+
+lon.sub = dt[, unique(lon)]
+lon.sub = lon.sub[seq(1, length(lon.sub), by = 2)]
+
+dt.sub = dt[lat %in% lat.sub & lon %in% lon.sub]
+```
+
+
+```{r}
+# semivariogram of emissivity
+sv = variog(
+  coords = cbind(dt.sub[!is.na(emis), lat], dt.sub[!is.na(emis), lon]),
+  data = dt.sub[!is.na(emis), emis]
+  )
+
+sv.dt = data.table(
+  dists = sv$u,
+  variogram = sv$v,
+  npairs = sv$n,
+  sd = sv$sd
+)
+
+sv.plot = ggplot(sv.dt, aes(x = dists, y = variogram)) + 
+  geom_point() + 
+  labs(title = "emissivity semivariogram")
+
+png(
+  filename = paste0(path_tabfig, "sv.EMIS.png"),
+  width = 1080,
+  height = 1080
+  )
+sv.plot
+dev.off()
+
+# identifying min and max distances
+summary(sv.dt)
+```
+
+```{r}
+# semivariogram of NDVI
+sv = variog(
+  coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+  data = dt.sub[, ndvi]
+  )
+
+sv.dt = data.table(
+  dists = sv$u,
+  variogram = sv$v,
+  npairs = sv$n,
+  sd = sv$sd
+)
+
+sv.plot = ggplot(sv.dt, aes(x = dists, y = variogram)) + 
+  geom_point() + 
+  labs(title = "NDVI semivariogram")
+
+png(
+  filename = paste0(path_tabfig, "sv.NDVI.png"),
+  width = 1080,
+  height = 1080
+  )
+sv.plot
+dev.off()
+
+# identifying min and max distances
+summary(sv.dt)
+```
+
+```{r}
+# semivariogram of temperature
+sv = variog(
+  coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+  data = dt.sub[, temp]
+  )
+
+sv.dt = data.table(
+  dists = sv$u,
+  variogram = sv$v,
+  npairs = sv$n,
+  sd = sv$sd
+)
+
+sv.plot = ggplot(sv.dt, aes(x = dists, y = variogram)) + 
+  geom_point() + 
+  labs(title = "temperature semivariogram")
+
+png(
+  filename = paste0(path_tabfig, "sv.TEMP.png"),
+  width = 1080,
+  height = 1080
+  )
+sv.plot
+dev.off()
+
+# identifying min and max distances
+summary(sv.dt)
+```
+
+```{r}
+# semivariogram of elevation
+sv = variog(
+  coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+  data = dt.sub[, elev]
+  )
+
+sv.dt = data.table(
+  dists = sv$u,
+  variogram = sv$v,
+  npairs = sv$n,
+  sd = sv$sd
+)
+
+sv.plot = ggplot(sv.dt, aes(x = dists, y = variogram)) + 
+  geom_point() + 
+  labs(title = "elevation semivariogram")
+
+png(
+  filename = paste0(path_tabfig, "sv.ELEV.png"),
+  width = 1080,
+  height = 1080
+  )
+sv.plot
+dev.off()
+
+# identifying min and max distances
+summary(sv.dt)
+
+# phi uniform prior range
+log(0.05) / -1 / max(sv.dt$dists)
+log(0.95) / -1 / min(sv.dt$dists)
+```
+
+```{r}
+# make top observations in 95th percentile variance missing for prediction
+dt[, emis.top.sd := emis.sd > quantile(emis.sd, 0.95, na.rm = TRUE)]
+dt[, ndvi.top.sd := ndvi.sd > quantile(ndvi.sd, 0.95, na.rm = TRUE)]
+dt[, temp.top.sd := temp.sd > quantile(temp.sd, 0.95, na.rm = TRUE)]
+
+dt[, emis.obs := copy(emis)]
+dt[, ndvi.obs := copy(ndvi)]
+dt[, temp.obs := copy(temp)]
+
+dt[emis.top.sd == TRUE, emis := NA]
+dt[ndvi.top.sd == TRUE, ndvi := NA]
+dt[temp.top.sd == TRUE, temp := NA]
+
+# # mapping prediction locations
+# emis.obs.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = emis.obs)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "observed emissivity")) +
+#   coord_fixed()
+# 
+# emis.na.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = emis)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "training emissivity")) +
+#   coord_fixed()
+# 
+# ndvi.obs.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = ndvi.obs)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "observed NDVI")) +
+#   coord_fixed()
+# 
+# ndvi.na.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = ndvi)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "training NDVI")) +
+#   coord_fixed()
+# 
+# temp.obs.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = temp.obs)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "observed temperature")) +
+#   coord_fixed()
+# 
+# temp.na.map = ggplot(dt, aes(lon, lat)) +
+#   geom_tile(aes(fill = temp)) +
+#   xlab("longitude") +
+#   ylab("latitude") +
+#   guides(fill = guide_legend(title = "training temperature")) +
+#   coord_fixed()
+# 
+# png(
+#   filename = paste0(path_tabfig, "EMIS.na.map.png"),
+#   width = 1080,
+#   height = 540
+# )
+# 
+# grid.arrange(emis.obs.map, emis.na.map, nrow = 1)
+# 
+# dev.off()
+# 
+# png(
+#   filename = paste0(path_tabfig, "NDVI.na.map.png"),
+#   width = 1080,
+#   height = 540
+# )
+# 
+# grid.arrange(ndvi.obs.map, ndvi.na.map, nrow = 1)
+# 
+# dev.off()
+# 
+# png(
+#   filename = paste0(path_tabfig, "TEMP.na.map.png"),
+#   width = 1080,
+#   height = 540
+# )
+# 
+# grid.arrange(temp.obs.map, temp.na.map, nrow = 1)
+# 
+# dev.off()
+```
+
+```{r}
+# save(dt, file = paste0(path_data, "ASTER.RData"))
+```
+
