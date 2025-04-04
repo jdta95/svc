@@ -31,7 +31,7 @@ beta_w = MASS::mvrnorm(1, rep(mean_w, n), sigmasq_w * C_w)
 # beta_1 = MASS::mvrnorm(1, rep(mean_1, n), sigmasq_1 * C_1)
 
 # generating X
-X_w = rep(1, n)
+X_w = rnorm(n)
 # X_1 = rnorm(n)
 
 # generating epsilon
