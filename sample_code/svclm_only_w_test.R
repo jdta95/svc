@@ -124,8 +124,8 @@ end = mcmc
 
 p = ncol(X)
 
-# all together: BAD
-# even starting at their true values
+# works for one spatially covarying coefficient
+# tau^2, sigma^2, and phi are still bad
 output = svc::svclm(
   Y = Y,
   X = X,
@@ -134,9 +134,9 @@ output = svc::svclm(
   X_knots = X_knots,
   knots = knots,
   beta_knots_start = matrix(0, nrow(X_knots), ncol(X_knots)),
-  phi_beta_start = phi_w,
-  sigmasq_beta_start = sigmasq_w,
-  tausq_start = tausq,
+  phi_beta_start = 2,
+  sigmasq_beta_start = 2,
+  tausq_start = 1,
   phi_beta_proposal_sd = rep(0.5, p),
   phi_beta_lower = rep(l, p),
   phi_beta_upper = rep(u, p),
@@ -146,28 +146,6 @@ output = svc::svclm(
   b_t = tausq,
   mcmc = mcmc
 )
-
-# # test with out knowing true values
-# output = svc::svclm(
-#   Y = Y,
-#   X = X,
-#   s = coords,
-#   Y_knots = Y_knots,
-#   X_knots = X_knots,
-#   knots = knots,
-#   beta_knots_start = matrix(0, nrow(X_knots), ncol(X_knots)),
-#   phi_beta_start = rep(l + (u - l) / 2, p),
-#   sigmasq_beta_start = rep(2, p),
-#   tausq_start = 2,
-#   phi_beta_proposal_sd = rep(0.5, p),
-#   phi_beta_lower = rep(l, p),
-#   phi_beta_upper = rep(u, p),
-#   a_beta = rep(2, p),
-#   b_beta = rep(2, p),
-#   a_t = 2,
-#   b_t = 2,
-#   mcmc = mcmc
-# )
 
 my_summary = function(x){
   return (c(
