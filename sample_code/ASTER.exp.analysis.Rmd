@@ -398,6 +398,6 @@ dt[temp.top.sd == TRUE, temp := NA]
 ```
 
 ```{r}
-save(dt, file = paste0(path_data, "ASTER.RData"))
+# save(dt, file = paste0(path_data, "ASTER.RData"))
 ```
 
