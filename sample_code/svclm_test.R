@@ -19,7 +19,7 @@ colnames(coords) = c("lat", "lon")
 n = nrow(coords)
 
 sigmasq_0 = 2
-phi_0 = 8
+phi_0 = 10
 C_0 = calc_C_phi(coords, phi_0)
 mean_0 = 0
 beta_0 = MASS::mvrnorm(1, rep(mean_0, n), sigmasq_0 * C_0)
@@ -31,7 +31,7 @@ mean_1 = 0
 beta_1 = MASS::mvrnorm(1, rep(mean_1, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 4
-phi_2 = 3
+phi_2 = 15
 C_2 = calc_C_phi(coords, phi_2)
 mean_2 = 0
 beta_2 = MASS::mvrnorm(1, rep(mean_2, n), sigmasq_2 * C_2)
@@ -145,7 +145,7 @@ grid.arrange(beta_1_plot, beta_1_knots_plot, ncol = 2)
 grid.arrange(beta_2_plot, beta_2_knots_plot, ncol = 2)
 
 l = 0
-u = 10
+u = 20
 
 # Test function
 
