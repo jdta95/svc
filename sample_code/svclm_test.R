@@ -10,8 +10,8 @@ calc_C_phi = function(coords, phi) {
 
 set.seed(123)
 
-lat = seq(0, 30, by = 1)
-lon = seq(0, 30, by = 1)
+lat = seq(0, 40, by = 1)
+lon = seq(0, 40, by = 1)
 
 coords = as.matrix(expand.grid(lat, lon))
 colnames(coords) = c("lat", "lon")
@@ -32,7 +32,7 @@ beta_1 = MASS::mvrnorm(1, rep(mean_1, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 4
 phi_2 = 3
-C_2 = calc_C_phi(coords, phi_1)
+C_2 = calc_C_phi(coords, phi_2)
 mean_2 = 0
 beta_2 = MASS::mvrnorm(1, rep(mean_2, n), sigmasq_2 * C_2)
 
@@ -88,7 +88,7 @@ grid.arrange(Y_plot, beta_0_plot, beta_1_plot, beta_2_plot, epsilon_plot, ncol =
 
 # generate knots
 ## 1 in every k^2 point on a grid is a knot
-k = 2
+k = 4
 
 lat_knots = unique(lat)
 lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
@@ -174,7 +174,7 @@ output = svc::svclm(
   sigmasq_beta_start = rep(2, p),
   tausq_start = 2,
   # phi_beta_proposal_sd = rep(0.5, p),
-  phi_beta_proposal_sd = c(0.5, 0.5, 0.5),
+  phi_beta_proposal_sd = c(3, 2.7, 2.5),
   phi_beta_lower = rep(l, p),
   phi_beta_upper = rep(u, p),
   a_beta = rep(2, p),
