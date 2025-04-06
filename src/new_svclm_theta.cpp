@@ -24,6 +24,7 @@ Rcpp::List new_svclm_theta(
   // Check input dimensions
   arma::uword n = Y.n_elem; // number of observations
   arma::uword p = X.n_cols; // number of predictors
+  arma::uword np = n * p;
   
   // input errors
   if (coords.n_rows != n || coords.n_cols != 2) {
@@ -75,11 +76,11 @@ Rcpp::List new_svclm_theta(
   const_bigC *= -0.5;
   
   // construct Z
-  
+  arma::mat Z(n, np);
   
   // calculate cur log density
   // calculate K_cur
-  arma::mat K_cur;
+  arma::mat K_cur(np, np);
   
   // calculate cur log p(theta)
   double logprior_cur; // log prior for current parameters
@@ -100,7 +101,7 @@ Rcpp::List new_svclm_theta(
     arma::vec phi_alt;
       
     // calculate K_alt
-    arma::mat K_alt;
+    arma::mat K_alt(np, np);
     
     // calculate alt log p(theta)
     double logprior_alt;
