@@ -64,59 +64,64 @@ Rcpp::List new_svclm_theta(
   arma::mat phi_bounds = arma::join_horiz(phi_lower, phi_upper);
   
   // calculate constant parts of various calculations
-  // constant part of bigC
-  arma::mat const_bigC(n, n);
-  for (unsigned int i = 0; i < n; i++) {
-    for (unsigned int j = 0; j < n; j++) {
-      // calculate the distance^2
-      const_bigC(i, j) = (coords(i, 0) - coords(j, 0)) * (coords(i, 0) - coords(j, 0)) +
-        (coords(i, 1) - coords(j, 1)) * (coords(i, 1) - coords(j, 1));
-    }
-  }
-  const_bigC *= -0.5;
-  
   // construct Z
   arma::mat Z(n, np);
   
+  // construct y:X
+  arma::mat YX = join_horiz(Y, X);
+  
+  // constant part of K
+  arma::mat const_K = arma::zeros(np, np);
+  for (unsigned int i = 0; i < n; i++) {
+    for (unsigned int j = 0; j < n; j++) {
+      // calculate the distance^2
+      const_K.submat(p * i, p * j, p * i + p - 1, p * j + p - 1).diag() = 
+        arma::ones(p) *
+        (coords(i, 0) - coords(j, 0)) * (coords(i, 0) - coords(j, 0)) +
+        (coords(i, 1) - coords(j, 1)) * (coords(i, 1) - coords(j, 1));
+    }
+  }
+  const_K *= -0.5; // scale by -0.5 for the Gaussian kernel
+  
   // calculate cur log density
   // calculate K_cur
-  arma::mat K_cur(np, np);
+  arma::mat K_cur = calc_K(tausig_cur.subvec(1, p), phi_cur, const_K, n, p);
   
   // calculate cur log p(theta)
   double logprior_cur; // log prior for current parameters
   
-  // calculate cur log p(theta | Y, X)
-  double logpost_cur; // log posterior for current parameters
+  // calculate cur log p(Y | theta)
+  double logdens_cur = calc_logdens(K_cur, tausig_cur(0), Z, YX, n, p);
   
-  // calculate full cur log density
-  double logdens_cur = logprior_cur + logpost_cur;
+  // calculate cur log posterior density
+  double logpost_cur = logprior_cur + logdens_cur;
   
   // MCMC loop
   for (unsigned int iter = 0; iter < mcmc; iter++) {
     
-    // Rcpp::Rcout << "Iteration: " << i + 1 << std::endl;
+    // Rcpp::Rcout << "Iteration: " << iter + 1 << std::endl;
     
     // propose alt tausq, sigmasq, phi in a 1-step random walk Metropolis
     arma::vec tausig_alt; // copy current values
     arma::vec phi_alt;
       
     // calculate K_alt
-    arma::mat K_alt(np, np);
+    arma::mat K_alt = calc_K(tausig_alt.subvec(1, p), phi_alt, const_K, n, p);
     
     // calculate alt log p(theta)
-    double logprior_alt;
-      
-    // calculate alt log p(theta | Y, X)
-    double logpost_alt;
+    double logprior_alt; // log prior for current parameters
     
-    // calculate full alt log density
-    double logdens_alt = logprior_alt + logpost_alt;
+    // calculate alt log p(Y | theta)
+    double logdens_alt = calc_logdens(K_alt, tausig_alt(0), Z, YX, n, p);
+    
+    // calculate alt log posterior density
+    double logpost_alt = logprior_alt + logdens_alt;
       
     // calculate Jacobian
     double jacobian;
     
     // Calculate the log acceptance probability
-    double logaccept = logdens_alt - logdens_cur + jacobian;
+    double logaccept = logpost_alt - logpost_cur + jacobian;
     
     bool accepted = do_I_accept(logaccept);
     
