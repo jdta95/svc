@@ -96,7 +96,10 @@ arma::vec update_phis(const arma::vec& phis_current, const arma::vec& proposal_s
     phis_prop(i) = logistic(prop_trans, phi_bounds_lower(i), phi_bounds_upper(i));
   }
   return phis_prop;
-}
+}  
+
+
+
 
 
 
