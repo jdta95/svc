@@ -5,11 +5,3 @@ svclm <- function(Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_s
     .Call(`_svc_svclm`, Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_start, sigmasq_beta_start, tausq_start, phi_beta_proposal_sd, phi_beta_lower, phi_beta_upper, a_beta, b_beta, a_t, b_t, mcmc)
 }
 
-svclm_beta <- function(Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_start, sigmasq_beta_start, tausq_start, phi_beta_proposal_sd, phi_beta_lower, phi_beta_upper, mcmc = 1000L) {
-    .Call(`_svc_svclm_beta`, Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_start, sigmasq_beta_start, tausq_start, phi_beta_proposal_sd, phi_beta_lower, phi_beta_upper, mcmc)
-}
-
-svclm_theta <- function(Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_start, sigmasq_beta_start, tausq_start, phi_beta_proposal_sd, phi_beta_lower, phi_beta_upper, a_beta, b_beta, a_t, b_t, mcmc = 1000L) {
-    .Call(`_svc_svclm_theta`, Y, X, s, Y_knots, X_knots, knots, beta_knots_start, phi_beta_start, sigmasq_beta_start, tausq_start, phi_beta_proposal_sd, phi_beta_lower, phi_beta_upper, a_beta, b_beta, a_t, b_t, mcmc)
-}
-

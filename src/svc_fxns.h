@@ -10,9 +10,28 @@ arma::mat calc_bigC(
 
 arma::mat get_R(const arma::mat& A);
 
-arma::mat inv_Chol(const arma::mat& R);
+arma::mat inv_Chol(const arma::mat& A);
 
-double logdet(const arma::mat& R);
+arma::mat inv_Chol_R(const arma::mat& R);
+
+double logdet_R(const arma::mat& R);
+
+arma::mat calc_K(
+    const arma::vec& sigmasq,
+    const arma::vec& phi,
+    const arma::mat& const_K,
+    arma::uword n,
+    arma::uword p
+);
+
+double calc_logdens(
+    const arma::mat& K,
+    double tausq,
+    const arma::mat& Z,
+    const arma::mat& YX,
+    arma::uword n,
+    arma::uword p
+);
 
 double logit(double x, double l, double u);
 

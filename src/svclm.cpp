@@ -26,7 +26,7 @@ Rcpp::List svclm(
   arma::uword n = Y.n_elem; // number of observations
   arma::uword p = X.n_cols; // number of predictors
   arma::uword m = knots.n_rows; // number of knots
-  
+
   // input errors
   if (X_knots.n_rows != m || X_knots.n_cols != p) {
     Rcpp::stop("Design matrix at knots 'X_knots' must be an m x p matrix.");
@@ -49,16 +49,16 @@ Rcpp::List svclm(
   if (sigmasq_beta_start.n_elem != p) {
     Rcpp::stop("Initial sigmasq beta coefficients 'sigmasq_beta_start' must have length p.");
   }
-  
+
   // Rcpp::Rcout << "Check 10. " << std::endl;
-  
+
   // initialize outputs
   arma::cube beta_samples = arma::zeros(mcmc, n, p);  // posterior beta at observed locations
   arma::mat phi_beta_samples = arma::zeros(mcmc, p); // mcmc x p matrix of samples for phi_beta's
   arma::mat phi_beta_acceptance = arma::zeros(mcmc, p); // mcmc x p matrix to track acceptance for phi_beta
   arma::mat sigmasq_beta_samples = arma::zeros(mcmc, p); // mcmc x p matrix of samples for sigmasq_beta
   arma::vec tausq_samples = arma::zeros(mcmc); // mcmc vector of samples for tau^2
-  
+
   // initialize parameters
   arma::mat beta_knots_cur = beta_knots_start; // current beta coefficients
   arma::vec sigmasq_beta_cur = sigmasq_beta_start;    // Current sigma^2_beta
@@ -66,7 +66,7 @@ Rcpp::List svclm(
 
   // Create lower and upper bounds matrices
   arma::mat phi_beta_bounds = arma::join_horiz(phi_beta_lower, phi_beta_upper);
-  
+
   // calculate constant parts of various calculations
   // constant part of bigC
   arma::mat const_bigC(m, m);
@@ -78,7 +78,7 @@ Rcpp::List svclm(
     }
   }
   const_bigC *= -0.5;
-  
+
   // constant part of lilc
   arma::mat const_lilc(m, n);
   for (unsigned int i = 0; i < m; i++) {
@@ -89,10 +89,10 @@ Rcpp::List svclm(
     }
   }
   const_lilc *= -0.5;
-  
+
   // constant X_knots_squared
   arma::mat X_knots_squared = arma::pow(X_knots, 2);
-  
+
   // // Initialize phi objects
   std::vector<phi_beta> phi_beta_vec = initialize_phi_beta(
     p,
@@ -103,16 +103,16 @@ Rcpp::List svclm(
     const_bigC,
     const_lilc
   );
-  
+
   // MCMC loop
   for (unsigned int i = 0; i < mcmc; i++) {
-    
-    // Rcpp::Rcout << "Iteration: " << i + 1 << std::endl;
-    
+
+    Rcpp::Rcout << "Iteration: " << i + 1 << std::endl;
+
     for (unsigned int j = 0; j < p; j++) {
       // Update phi_j via Random Walk Metropolis
       phi_beta_vec.at(j).RWupdate(beta_knots_cur, sigmasq_beta_cur);
-      
+
       // Update sigma^2_beta
       sigmasq_beta_cur(j) = update_sigma2_r(beta_knots_cur.col(j), a_beta(j), b_beta(j), phi_beta_vec.at(j).C_phi_cur_inv);
 
@@ -127,7 +127,7 @@ Rcpp::List svclm(
         tausq_cur,
         j
       );
-      
+
       // predict beta_j at all locations
       beta_samples.subcube(i, 0, j, i, n - 1, j) = calc_x_tilde(
         phi_beta_vec.at(j).c_phi_cur,
@@ -135,28 +135,28 @@ Rcpp::List svclm(
         beta_knots_cur.col(j)
       );
     }
-    
+
     sigmasq_beta_samples.row(i) = sigmasq_beta_cur.t(); // store the current sigma^2_beta samples
-    
+
     // update tau^2
     // Currently using only knots
     // Should use all locations if we can get beta predictions
     tausq_cur = update_tau2_r(Y_knots, X_knots, beta_knots_cur, a_t, b_t);
     tausq_samples(i) = tausq_cur;
   }
-  
+
   for (unsigned int j = 0; j < p; j++) {
     // Store the final phi_beta samples and acceptance rates
     phi_beta_samples.col(j) = phi_beta_vec.at(j).samples;
     phi_beta_acceptance.col(j) = phi_beta_vec.at(j).acceptance;
   }
-  
+
   Rcpp::List output;
   output["beta_samples"] = beta_samples; // posterior beta samples at observed locations
   output["phi_beta_samples"] = phi_beta_samples;
   output["phi_beta_acceptance"] = phi_beta_acceptance;
   output["sigmasq_beta_samples"] = sigmasq_beta_samples; // posterior sigma^2_beta samples
   output["tausq_samples"] = tausq_samples; // posterior tau^2 samples
-  
+
   return output;
 }
