@@ -15,28 +15,82 @@ arma::mat calc_lilc(
   return exp(const_lilc / phi);
 }
 
-arma::mat get_R(
-  const arma::mat& A
+arma::mat stable_Chol(
+    const arma::mat& A
 ){
   arma::mat symA = 0.5 * (A + A.t()); // Ensure symmetry
-  symA += arma::eye(A.n_rows, A.n_cols) * 1e-5; // Add a small value to the diagonal for numerical stability
+  symA += arma::eye(A.n_rows, A.n_cols) * 1e-10; // Add a small value to the diagonal for numerical stability
   arma::mat R = arma::chol(symA);
   return R; // Return the Cholesky factor
 }
 
+// get inverse of A given A
 arma::mat inv_Chol(
+    const arma::mat& A
+) {
+  arma::mat Rinv = arma::inv(arma::trimatu(stable_Chol(A)));
+  arma::mat Ainv = Rinv * Rinv.t();
+  return Ainv;
+}
+
+// get inverse of A given R = Chol(A)
+arma::mat inv_Chol_R(
     const arma::mat& R
 ) {
-  arma::mat Rinv = arma::inv(R);
+  arma::mat Rinv = arma::inv(arma::trimatu(R));
   arma::mat Ainv = Rinv * Rinv.t();
   return Ainv;
 }
 
 double logdet(
-    const arma::mat& R
+    const arma::mat& A
 ) {
-  double logdet = 2 * arma::accu(arma::log(arma::diagvec(R)));
+  double logdet = 2 * arma::accu(arma::log(arma::diagvec(stable_Chol(A))));
   return logdet;
+}
+
+arma::mat calc_K(
+    const arma::vec& sigmasq,
+    const arma::vec& phi,
+    const arma::mat& const_K,
+    arma::uword n,
+    arma::uword p
+) {
+  arma::mat K = const_K;
+  for (unsigned int i = 0; i < n; i++) {
+    arma::uword pi = p * i;
+    arma::uword piplus = pi + p - 1;
+    for (unsigned int j = 0; j < n; j++) {
+      arma::uword pj = p * j;
+      arma::uword pjplus = pj + p - 1;
+      // calculate the distance^2
+      K.submat(pi, pj, piplus, pjplus).diag() = 
+        exp(K.submat(pi, pj, piplus, pjplus).diag() / phi);
+    }
+  }
+  return K;
+}
+
+double calc_logdens(
+    const arma::mat& K,
+    double tausq,
+    const arma::mat& Z,
+    const arma::mat& YX,
+    arma::uword n,
+    arma::uword p
+) {
+  arma::mat Sigma = Z * K * Z.t() + arma::eye(n, n) * tausq; // n x n
+  arma::mat L = stable_Chol(Sigma); // n x n, upper triangular matrix
+  arma::mat vU = arma::solve(arma::trimatu(L), YX); // n x p+1
+  arma::vec v = vU.col(0); // n x 1, first column of vU
+  arma::mat U = vU.submat(arma::span::all, arma::span(1, p)); // n x p
+  arma::mat W = stable_Chol(U.t() * U); // p x p
+  arma::vec b = U.t() * v; // p x 1
+  arma::vec btilde = arma::solve(arma::trimatu(W), b); // p x 1
+  double logdens = -1 * arma::accu(arma::log(arma::diagvec(W))) -
+    arma::accu(arma::log(arma::diagvec(L))) -
+    0.5 * arma::as_scalar((v.t() * v - btilde.t() * btilde));
+  return logdens;
 }
 
 double logit(double x, double l, double u){
@@ -70,6 +124,41 @@ double calc_jacobian(double new_param, double param, const arma::mat& set_unif_b
   return jac;
 }
 
+bool do_I_accept(double logaccept){
+  double u = arma::randu();
+  bool answer = exp(logaccept) > u;
+  return answer;
+}
+
+arma::vec calc_x_tilde(
+    const arma::mat& lilc_cur,
+    const arma::mat& bigC_inv_cur,
+    const arma::vec& x_knots
+) {
+  
+  return lilc_cur.t() * bigC_inv_cur * x_knots;
+}
+
+
+
+
+
+
+
+// I think everything below here is no longer needed for new method
+// but we need to keep for now until we get rid of the original svclm.
+// If there is something you end up needing, move it up above this
+// so we don't delete it later
+
+arma::mat get_R(
+    const arma::mat& A
+){
+  arma::mat symA = 0.5 * (A + A.t()); // Ensure symmetry
+  symA += arma::eye(A.n_rows, A.n_cols) * 1e-5; // Add a small value to the diagonal for numerical stability
+  arma::mat R = arma::chol(symA);
+  return R; // Return the Cholesky factor
+}
+
 double GP_log_density(
     const arma::vec& x, // can be beta or w vector
     double sigmasq,
@@ -83,12 +172,6 @@ double GP_log_density(
     0.5 * arma::as_scalar(x.t() * Sigma_inv * x);
   
   return log_likelihood;
-}
-
-bool do_I_accept(double logaccept){
-  double u = arma::randu();
-  bool answer = exp(logaccept) > u;
-  return answer;
 }
 
 phi_beta::phi_beta(
@@ -108,7 +191,7 @@ phi_beta::phi_beta(
   phi_cur = phi_start(r_in);
   C_phi_cur = calc_bigC(const_bigC_in, phi_cur);
   R_phi_cur = get_R(C_phi_cur);
-  C_phi_cur_inv = inv_Chol(R_phi_cur);
+  C_phi_cur_inv = inv_Chol_R(R_phi_cur);
   C_phi_cur_logdet = logdet(R_phi_cur);
   c_phi_cur = calc_lilc(const_lilc_in, phi_cur);
   proposal_sd = proposal_sd_in(r_in);
@@ -154,7 +237,7 @@ void phi_beta::RWupdate(
 
   arma::mat C_phi_alt = calc_bigC(const_bigC, phi_alt);
   arma::mat R_phi_alt = get_R(C_phi_alt);
-  arma::mat C_phi_alt_inv = inv_Chol(R_phi_alt);
+  arma::mat C_phi_alt_inv = inv_Chol_R(R_phi_alt);
   double C_phi_alt_logdet = logdet(R_phi_alt);
 
   // Calculate the log density of (w | sigma^2, phi)
@@ -213,15 +296,6 @@ arma::vec update_beta_r_knots(
   arma::vec beta_r_knots = arma::mvnrnd(mu1, Sigma1);
   
   return beta_r_knots;
-}
-
-arma::vec calc_x_tilde(
-    const arma::mat& lilc_cur,
-    const arma::mat& bigC_inv_cur,
-    const arma::vec& x_knots
-) {
-  
-  return lilc_cur.t() * bigC_inv_cur * x_knots;
 }
 
 double update_sigma2_r(
