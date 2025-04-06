@@ -19,19 +19,19 @@ colnames(coords) = c("lat", "lon")
 n = nrow(coords)
 
 sigmasq_0 = 2
-phi_0 = 10
+phi_0 = 15
 C_0 = calc_C_phi(coords, phi_0)
 mean_0 = 0
 beta_0 = MASS::mvrnorm(1, rep(mean_0, n), sigmasq_0 * C_0)
 
 sigmasq_1 = 6
-phi_1 = 5
+phi_1 = 10
 C_1 = calc_C_phi(coords, phi_1)
 mean_1 = 0
 beta_1 = MASS::mvrnorm(1, rep(mean_1, n), sigmasq_1 * C_1)
 
 sigmasq_2 = 4
-phi_2 = 15
+phi_2 = 20
 C_2 = calc_C_phi(coords, phi_2)
 mean_2 = 0
 beta_2 = MASS::mvrnorm(1, rep(mean_2, n), sigmasq_2 * C_2)
@@ -42,7 +42,7 @@ X_1 = rnorm(n)
 X_2 = rnorm(n)
 
 # generating epsilon
-tausq = 2
+tausq = 0.01
 epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
 
 Y = X_0 * beta_0 + X_1 * beta_1 + X_2 * beta_2 + epsilon
@@ -145,7 +145,7 @@ grid.arrange(beta_1_plot, beta_1_knots_plot, ncol = 2)
 grid.arrange(beta_2_plot, beta_2_knots_plot, ncol = 2)
 
 l = 0
-u = 20
+u = 30
 
 # Test function
 
@@ -154,7 +154,7 @@ Rcpp::compileAttributes()
 # load in library for testing
 devtools::load_all()
 
-mcmc = 3000
+mcmc = 5000
 
 start = mcmc * 0.5
 end = mcmc
@@ -174,7 +174,7 @@ output = svc::svclm(
   sigmasq_beta_start = rep(2, p),
   tausq_start = 2,
   # phi_beta_proposal_sd = rep(0.5, p),
-  phi_beta_proposal_sd = c(3, 2.7, 2.5),
+  phi_beta_proposal_sd = c(1, 0.6, 1.1),
   phi_beta_lower = rep(l, p),
   phi_beta_upper = rep(u, p),
   a_beta = rep(2, p),
