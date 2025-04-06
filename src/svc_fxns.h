@@ -14,9 +14,7 @@ arma::mat inv_Chol(const arma::mat& A);
 
 arma::mat inv_Chol_R(const arma::mat& R);
 
-double logdet(const arma::mat& R);
-
-
+double logdet_R(const arma::mat& R);
 
 arma::mat calc_K(
     const arma::vec& sigmasq,

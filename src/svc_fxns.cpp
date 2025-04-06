@@ -42,10 +42,11 @@ arma::mat inv_Chol_R(
   return Ainv;
 }
 
-double logdet(
-    const arma::mat& A
+// get logdet of A by giving R from stable_Chol(A)
+double logdet_R(
+    const arma::mat& R
 ) {
-  double logdet = 2 * arma::accu(arma::log(arma::diagvec(stable_Chol(A))));
+  double logdet = 2 * arma::accu(arma::log(arma::diagvec(R)));
   return logdet;
 }
 
@@ -154,7 +155,7 @@ arma::mat get_R(
     const arma::mat& A
 ){
   arma::mat symA = 0.5 * (A + A.t()); // Ensure symmetry
-  symA += arma::eye(A.n_rows, A.n_cols) * 1e-5; // Add a small value to the diagonal for numerical stability
+  symA += arma::eye(A.n_rows, A.n_cols) * 1e-10; // Add a small value to the diagonal for numerical stability
   arma::mat R = arma::chol(symA);
   return R; // Return the Cholesky factor
 }
@@ -192,7 +193,7 @@ phi_beta::phi_beta(
   C_phi_cur = calc_bigC(const_bigC_in, phi_cur);
   R_phi_cur = get_R(C_phi_cur);
   C_phi_cur_inv = inv_Chol_R(R_phi_cur);
-  C_phi_cur_logdet = logdet(R_phi_cur);
+  C_phi_cur_logdet = logdet_R(R_phi_cur);
   c_phi_cur = calc_lilc(const_lilc_in, phi_cur);
   proposal_sd = proposal_sd_in(r_in);
   phi_bounds = phi_bounds_in.row(r_in);
@@ -238,7 +239,7 @@ void phi_beta::RWupdate(
   arma::mat C_phi_alt = calc_bigC(const_bigC, phi_alt);
   arma::mat R_phi_alt = get_R(C_phi_alt);
   arma::mat C_phi_alt_inv = inv_Chol_R(R_phi_alt);
-  double C_phi_alt_logdet = logdet(R_phi_alt);
+  double C_phi_alt_logdet = logdet_R(R_phi_alt);
 
   // Calculate the log density of (w | sigma^2, phi)
   double logdens_cur = GP_log_density(x_knots, sigmasq_cur, C_phi_cur_inv, C_phi_cur_logdet);
