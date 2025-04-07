@@ -12,15 +12,15 @@ Rcpp::List svclm(
     const arma::mat& beta_knots_start,       // Initial value for coefficients: beta 1, ..., beta p
     const arma::vec& phi_beta_start,        // Initial value for phi: beta 1, ..., beta p
     const arma::vec& sigmasq_beta_start,     // Initial value for sigma^2: beta 1, ..., beta p
-    double tausq_start,               // Initial value for tau^2
     const arma::vec& phi_beta_proposal_sd, // Proposal standard deviations for phi: beta 1, ..., beta p
-    double phi_target_acceptance, // Target acceptance rate for phi updates
     const arma::vec& phi_beta_lower,      // Lower bounds for phi: beta 1, ..., beta p
     const arma::vec& phi_beta_upper,      // Upper bounds for phi: beta 1, ..., beta p
     const arma::vec& a_beta,            // Hyperparameter a for sigma^2_beta
     const arma::vec& b_beta,            // Hyperparameter b for sigma^2_beta
-    double a_t,               // Hyperparameter a for tau^2
-    double b_t,               // Hyperparameter b for tau^2
+    double tausq_start = 1,               // Initial value for tau^2
+    double a_t = 0.001,               // Hyperparameter a for tau^2
+    double b_t = 0.001,               // Hyperparameter b for tau^2
+    double phi_target_acceptance = 0.234, // Target acceptance rate for phi updates
     unsigned int mcmc = 1000                   // Number of MCMC iterations
 ){
   // Check input dimensions
