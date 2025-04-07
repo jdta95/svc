@@ -73,27 +73,45 @@ public:
   arma::mat C_phi_cur_inv;
   double C_phi_cur_logdet;
   arma::mat c_phi_cur;
-  double proposal_sd;
+  double paramsd;
   arma::mat phi_bounds;
   const arma::mat& const_bigC;
   const arma::mat& const_lilc;
-  unsigned int iter;
+  unsigned int accept_count;
+  int iter;
+  double accept_ratio;
+  double alpha_star;
+  double gamma;
+  int g0;
+  int i;
+  double S;
+  double Sigma;
+  double prodparam;
+  double eta;
+  bool started;
   unsigned int r;
   
   phi_beta(
     unsigned int mcmc,
     unsigned int r_in,
-    const arma::vec phi_start,
-    const arma::vec proposal_sd_in,
+    const arma::vec& phi_start,
+    const arma::vec& proposal_sd_in,
     const arma::mat& phi_bounds_in,
     const arma::mat& const_bigC_in,
-    const arma::mat& const_lilc_in
+    const arma::mat& const_lilc_in,
+    double target_accept
   );
   
   void RWupdate(
       const arma::mat& x_knots_mat, // can be beta or w vector
       const arma::vec& sigmasq_cur_vec
   );
+  
+  void adapt(
+      double u,
+      double alpha
+  );
+  
 };
 
 std::vector<phi_beta> initialize_phi_beta(
@@ -103,7 +121,8 @@ std::vector<phi_beta> initialize_phi_beta(
     const arma::vec& phi_proposal_sd,
     const arma::mat& phi_bounds,
     const arma::mat& const_bigC,
-    const arma::mat& const_lilc
+    const arma::mat& const_lilc,
+    double target_accept
 );
 
 arma::vec update_beta_r_knots(

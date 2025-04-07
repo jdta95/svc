@@ -154,7 +154,7 @@ Rcpp::compileAttributes()
 # load in library for testing
 devtools::load_all()
 
-mcmc = 5000
+mcmc = 2000
 
 start = mcmc * 0.5
 end = mcmc
@@ -173,8 +173,9 @@ output = svc::svclm(
   phi_beta_start = rep(l + (u - l) / 2, p),
   sigmasq_beta_start = rep(2, p),
   tausq_start = 2,
-  # phi_beta_proposal_sd = rep(0.5, p),
-  phi_beta_proposal_sd = c(1, 0.6, 1.1),
+  phi_beta_proposal_sd = rep(1, p),
+  # phi_beta_proposal_sd = c(1, 0.1, 10),
+  phi_target_acceptance = 0.234,
   phi_beta_lower = rep(l, p),
   phi_beta_upper = rep(u, p),
   a_beta = rep(2, p),

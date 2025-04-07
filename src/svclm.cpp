@@ -14,6 +14,7 @@ Rcpp::List svclm(
     const arma::vec& sigmasq_beta_start,     // Initial value for sigma^2: beta 1, ..., beta p
     double tausq_start,               // Initial value for tau^2
     const arma::vec& phi_beta_proposal_sd, // Proposal standard deviations for phi: beta 1, ..., beta p
+    double phi_target_acceptance, // Target acceptance rate for phi updates
     const arma::vec& phi_beta_lower,      // Lower bounds for phi: beta 1, ..., beta p
     const arma::vec& phi_beta_upper,      // Upper bounds for phi: beta 1, ..., beta p
     const arma::vec& a_beta,            // Hyperparameter a for sigma^2_beta
@@ -101,7 +102,8 @@ Rcpp::List svclm(
     phi_beta_proposal_sd,
     phi_beta_bounds,
     const_bigC,
-    const_lilc
+    const_lilc,
+    phi_target_acceptance
   );
 
   // MCMC loop

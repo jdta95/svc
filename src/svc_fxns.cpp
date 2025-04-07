@@ -178,11 +178,12 @@ double GP_log_density(
 phi_beta::phi_beta(
   unsigned int mcmc,
   unsigned int r_in,
-  const arma::vec phi_start,
-  const arma::vec proposal_sd_in,
+  const arma::vec& phi_start,
+  const arma::vec& proposal_sd_in,
   const arma::mat& phi_bounds_in,
   const arma::mat& const_bigC_in,
-  const arma::mat& const_lilc_in
+  const arma::mat& const_lilc_in,
+  double target_accept
 )
   : const_bigC(const_bigC_in),
     const_lilc(const_lilc_in)
@@ -195,9 +196,16 @@ phi_beta::phi_beta(
   C_phi_cur_inv = inv_Chol_R(R_phi_cur);
   C_phi_cur_logdet = logdet_R(R_phi_cur);
   c_phi_cur = calc_lilc(const_lilc_in, phi_cur);
-  proposal_sd = proposal_sd_in(r_in);
+  paramsd = proposal_sd_in(r_in);
   phi_bounds = phi_bounds_in.row(r_in);
+  accept_count = 0;
   iter = 0;
+  alpha_star = target_accept;
+  gamma = 0.5 + 1e-16;
+  g0 = 100;
+  S = paramsd * paramsd;
+  prodparam = paramsd / (g0 + 1.0);
+  started = false;
   r = r_in;
 }
 
@@ -208,7 +216,8 @@ std::vector<phi_beta> initialize_phi_beta(
     const arma::vec& phi_beta_proposal_sd,
     const arma::mat& phi_beta_bounds,
     const arma::mat& const_bigC,
-    const arma::mat& const_lilc
+    const arma::mat& const_lilc,
+    double target_accept
 ){
   std::vector<phi_beta> phi_beta_vec;
   
@@ -220,7 +229,8 @@ std::vector<phi_beta> initialize_phi_beta(
       phi_beta_proposal_sd,
       phi_beta_bounds,
       const_bigC,
-      const_lilc
+      const_lilc,
+      target_accept
     );
   }
   return phi_beta_vec;
@@ -233,8 +243,10 @@ void phi_beta::RWupdate(
   arma::vec x_knots = x_knots_mat.col(r);
   double sigmasq_cur = sigmasq_cur_vec(r);
   
+  double u_update = arma::randn();
+  
   double phi_alt = par_huvtransf_back(par_huvtransf_fwd(
-    phi_cur, phi_bounds) + proposal_sd * arma::randn(), phi_bounds);
+    phi_cur, phi_bounds) + paramsd * u_update, phi_bounds);
 
   arma::mat C_phi_alt = calc_bigC(const_bigC, phi_alt);
   arma::mat R_phi_alt = get_R(C_phi_alt);
@@ -261,10 +273,31 @@ void phi_beta::RWupdate(
     C_phi_cur_logdet = C_phi_alt_logdet;
     c_phi_cur = calc_lilc(const_lilc, phi_cur);
     acceptance(iter) = 1;
+    accept_count++;
+    accept_ratio = static_cast<double>(accept_count) / (iter + 1);
   }
+  
+  phi_beta::adapt(u_update, exp(logaccept));
   
   samples(iter) = phi_cur;
   iter++;
+}
+
+void phi_beta::adapt(
+    double u,
+    double alpha
+){
+  if(!started & (iter < 2 * g0)) {
+    started = true;
+  }
+  if(started){
+    i = iter - g0;
+    eta = std::min(1.0, pow(i + 1, -gamma));
+    alpha = std::min(1.0, alpha);
+    Sigma = 1 + eta * (alpha - alpha_star);
+    S = paramsd * paramsd * Sigma;
+    paramsd = sqrt(S);
+  }
 }
 
 arma::vec update_beta_r_knots(
