@@ -328,10 +328,8 @@ arma::vec update_w_r_knots(
   arma::vec Y_tilde = Y_knots - sumXw;
   arma::vec result = Y_tilde / X_knots.col(j);
   arma::vec mu1 = Sigma1_Chol * Sigma1_Chol.t() * Sigmainv * result;
-  // arma::vec mu1 = Sigma1 * Sigmainv * result;
-  arma::vec w_r_knots = mu1 + Sigma1_Chol * arma::randn(m);
   
-  // arma::vec w_r_knots = arma::mvnrnd(mu1, Sigma1);
+  arma::vec w_r_knots = mu1 + Sigma1_Chol * arma::randn(m);
   
   return w_r_knots;
 }
