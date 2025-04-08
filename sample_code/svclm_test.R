@@ -127,8 +127,18 @@ end = mcmc
 
 p = ncol(X)
 
-# test with uninformative priors and knot data from svc::simpleknots()
-output = svc::svclm(
+# svclm with minimum required arguments
+# uses full GP by default, not feasible for large data sets
+output_full = svc::svclm(
+  Y = Y,
+  X = X,
+  coords = coords,
+  phi_lower = rep(l, p),
+  phi_upper = rep(u, p)
+)
+
+# svclm with recommended arguments using knot data from simpleknots()
+output_LR = svc::svclm(
   Y = Y,
   X = X,
   coords = coords,
@@ -149,41 +159,41 @@ my_summary = function(x){
 }
 
 # phi_0
-plot(y = output$phi_samples[1:end, 1], x = 1:end, type = "l", main = "Trace plot of phi_0", ylab = "phi_0", xlab = "Iteration")
-mean(output$phi_acceptance[, 1])
-my_summary(output$phi_samples[start:end, 1])
+plot(y = output_LR$phi_samples[1:end, 1], x = 1:end, type = "l", main = "Trace plot of phi_0", ylab = "phi_0", xlab = "Iteration")
+mean(output_LR$phi_acceptance[, 1])
+my_summary(output_LR$phi_samples[start:end, 1])
 phi_0
 
 # phi_1
-plot(y = output$phi_samples[1:end, 2], x = 1:end, type = "l", main = "Trace plot of phi_1", ylab = "phi_1", xlab = "Iteration")
-mean(output$phi_acceptance[, 2])
-my_summary(output$phi_samples[start:end, 2])
+plot(y = output_LR$phi_samples[1:end, 2], x = 1:end, type = "l", main = "Trace plot of phi_1", ylab = "phi_1", xlab = "Iteration")
+mean(output_LR$phi_acceptance[, 2])
+my_summary(output_LR$phi_samples[start:end, 2])
 phi_1
 
 # phi_2
-plot(y = output$phi_samples[1:end, 3], x = 1:end, type = "l", main = "Trace plot of phi_2", ylab = "phi_2", xlab = "Iteration")
-mean(output$phi_acceptance[, 3])
-my_summary(output$phi_samples[start:end, 3])
+plot(y = output_LR$phi_samples[1:end, 3], x = 1:end, type = "l", main = "Trace plot of phi_2", ylab = "phi_2", xlab = "Iteration")
+mean(output_LR$phi_acceptance[, 3])
+my_summary(output_LR$phi_samples[start:end, 3])
 phi_2
 
 # sigma_0
-plot(y = output$sigmasq_samples[1:end, 1], x = 1:end, type = "l", main = "Trace plot of sigmasq_0", ylab = "sigmasq_0", xlab = "Iteration")
-my_summary(output$sigmasq_samples[start:end, 1])
+plot(y = output_LR$sigmasq_samples[1:end, 1], x = 1:end, type = "l", main = "Trace plot of sigmasq_0", ylab = "sigmasq_0", xlab = "Iteration")
+my_summary(output_LR$sigmasq_samples[start:end, 1])
 sigmasq_0
 
 # sigma_1
-plot(y = output$sigmasq_samples[1:end, 2], x = 1:end, type = "l", main = "Trace plot of sigmasq_1", ylab = "sigmasq_1", xlab = "Iteration")
-my_summary(output$sigmasq_samples[start:end, 2])
+plot(y = output_LR$sigmasq_samples[1:end, 2], x = 1:end, type = "l", main = "Trace plot of sigmasq_1", ylab = "sigmasq_1", xlab = "Iteration")
+my_summary(output_LR$sigmasq_samples[start:end, 2])
 sigmasq_1
 
 # sigma_2
-plot(y = output$sigmasq_samples[1:end, 3], x = 1:end, type = "l", main = "Trace plot of sigmasq_2", ylab = "sigmasq_2", xlab = "Iteration")
-my_summary(output$sigmasq_samples[start:end, 3])
+plot(y = output_LR$sigmasq_samples[1:end, 3], x = 1:end, type = "l", main = "Trace plot of sigmasq_2", ylab = "sigmasq_2", xlab = "Iteration")
+my_summary(output_LR$sigmasq_samples[start:end, 3])
 sigmasq_2
 
 # tau^2
-plot(y = output$tausq_samples[1:end], x = 1:end, type = "l", main = "Trace plot of tau^2", ylab = "tau^2", xlab = "Iteration")
-my_summary(output$tausq_samples[start:end])
+plot(y = output_LR$tausq_samples[1:end], x = 1:end, type = "l", main = "Trace plot of tau^2", ylab = "tau^2", xlab = "Iteration")
+my_summary(output_LR$tausq_samples[start:end])
 tausq
 
 # w results
@@ -216,7 +226,7 @@ w_2_knots_plot = ggplot(data = knot_unknowns_df) +
   labs(x = "longitude", y = "latitude")
 
 # w_0
-w_0_pred_plot = ggplot(data = data.frame(coords, what0 = colMeans(output$w_samples[start:end, , 1]))) +
+w_0_pred_plot = ggplot(data = data.frame(coords, what0 = colMeans(output_LR$w_samples[start:end, , 1]))) +
   geom_tile(aes(x = lon, y = lat, fill = what0)) +
   guides(fill = guide_legend(title = "w_0 hats")) +
   coord_fixed() + 
@@ -224,7 +234,7 @@ w_0_pred_plot = ggplot(data = data.frame(coords, what0 = colMeans(output$w_sampl
   labs(x = "longitude", y = "latitude")
 
 # w_1
-w_1_pred_plot = ggplot(data = data.frame(coords, what1 = colMeans(output$w_samples[start:end, , 2]))) +
+w_1_pred_plot = ggplot(data = data.frame(coords, what1 = colMeans(output_LR$w_samples[start:end, , 2]))) +
   geom_tile(aes(x = lon, y = lat, fill = what1)) +
   guides(fill = guide_legend(title = "w_1 hats")) +
   coord_fixed() + 
@@ -232,7 +242,7 @@ w_1_pred_plot = ggplot(data = data.frame(coords, what1 = colMeans(output$w_sampl
   labs(x = "longitude", y = "latitude")
 
 # w_2
-w_2_pred_plot = ggplot(data = data.frame(coords, what2 = colMeans(output$w_samples[start:end, , 3]))) +
+w_2_pred_plot = ggplot(data = data.frame(coords, what2 = colMeans(output_LR$w_samples[start:end, , 3]))) +
   geom_tile(aes(x = lon, y = lat, fill = what2)) +
   guides(fill = guide_legend(title = "w_2 hats")) +
   coord_fixed() + 
@@ -245,7 +255,7 @@ grid.arrange(w_2_plot, w_2_knots_plot, w_2_pred_plot, ncol = 2)
 
 # arbitrary w_0(s)
 s = n / 2
-plot(y = output$w_samples[1:end, s, 1], x = 1:end, type = "l", main = "Trace plot of w_0", ylab = "w_0", xlab = "Iteration")
-my_summary(output$w_samples[start:end, s, 1])
+plot(y = output_LR$w_samples[1:end, s, 1], x = 1:end, type = "l", main = "Trace plot of w_0", ylab = "w_0", xlab = "Iteration")
+my_summary(output_LR$w_samples[start:end, s, 1])
 w_0[s]
 

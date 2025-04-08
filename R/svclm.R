@@ -4,9 +4,9 @@ svclm = function(
     Y,
     X,
     coords,
-    Y_knots = Y,
-    X_knots = X,
-    knots = s,
+    Y_knots = Y, # runs full GP by default
+    X_knots = X, # runs full GP by default
+    knots = coords, # runs full GP by default
     w_knots_start = matrix(0, nrow = nrow(X_knots), ncol = ncol(X_knots)),
     sigmasq_start = rep(1, ncol(X_knots)),
     a_sigmasq = rep(0.001, ncol(X_knots)),
