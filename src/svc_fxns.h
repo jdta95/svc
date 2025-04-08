@@ -50,7 +50,7 @@ double calc_jacobian(
 );
 
 double GP_log_density(
-    const arma::vec& x, // can be beta or w vector
+    const arma::vec& x,
     double sigmasq,
     const arma::mat& C_phi_inv,
     double C_phi_logdet
@@ -63,7 +63,7 @@ arma::mat calc_lilc(
     double phi
 );
 
-class phi_beta {
+class phi {
 public:
   arma::vec samples;
   arma::vec acceptance;
@@ -91,7 +91,7 @@ public:
   bool started;
   unsigned int r;
   
-  phi_beta(
+  phi(
     unsigned int mcmc,
     unsigned int r_in,
     const arma::vec& phi_start,
@@ -103,7 +103,7 @@ public:
   );
   
   void RWupdate(
-      const arma::mat& x_knots_mat, // can be beta or w vector
+      const arma::mat& x_knots_mat,
       const arma::vec& sigmasq_cur_vec
   );
   
@@ -114,7 +114,7 @@ public:
   
 };
 
-std::vector<phi_beta> initialize_phi_beta(
+std::vector<phi> initialize_phi(
     unsigned int p,
     unsigned int mcmc,
     const arma::vec& phi_start,
@@ -125,11 +125,11 @@ std::vector<phi_beta> initialize_phi_beta(
     double target_accept
 );
 
-arma::vec update_beta_r_knots(
+arma::vec update_w_r_knots(
     const arma::vec& Y_knots,
     const arma::mat& X_knots,
     const arma::mat& X_knots_squared,
-    const arma::mat& beta_knots,
+    const arma::mat& w_knots,
     const arma::mat& C_phi_cur_inv,
     double sigma_r_square,
     double tau_square,
@@ -143,7 +143,7 @@ arma::vec calc_x_tilde(
 );
 
 double update_sigma2_r(
-    const arma::vec& beta_r,
+    const arma::vec& w_r,
     double a_r,
     double b_r,
     const arma::mat& C_inv
@@ -152,7 +152,7 @@ double update_sigma2_r(
 double update_tau2_r(
     const arma::vec& Y,
     const arma::mat& X,
-    const arma::mat& beta,
+    const arma::mat& w,
     double a_t,
     double b_t
 );

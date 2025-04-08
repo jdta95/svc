@@ -161,7 +161,7 @@ arma::mat get_R(
 }
 
 double GP_log_density(
-    const arma::vec& x, // can be beta or w vector
+    const arma::vec& x,
     double sigmasq,
     const arma::mat& C_phi_inv,
     double C_phi_logdet
@@ -175,7 +175,7 @@ double GP_log_density(
   return log_likelihood;
 }
 
-phi_beta::phi_beta(
+phi::phi(
   unsigned int mcmc,
   unsigned int r_in,
   const arma::vec& phi_start,
@@ -209,35 +209,35 @@ phi_beta::phi_beta(
   r = r_in;
 }
 
-std::vector<phi_beta> initialize_phi_beta(
+std::vector<phi> initialize_phi(
     unsigned int p,
     unsigned int mcmc,
-    const arma::vec& phi_beta_start,
-    const arma::vec& phi_beta_proposal_sd,
-    const arma::mat& phi_beta_bounds,
+    const arma::vec& phi_start,
+    const arma::vec& phi_proposal_sd,
+    const arma::mat& phi_bounds,
     const arma::mat& const_bigC,
     const arma::mat& const_lilc,
     double target_accept
 ){
-  std::vector<phi_beta> phi_beta_vec;
+  std::vector<phi> phi_vec;
   
   for (unsigned int k = 0; k < p; k++) {
-    phi_beta_vec.emplace_back(
+    phi_vec.emplace_back(
       mcmc,
       k,
-      phi_beta_start,
-      phi_beta_proposal_sd,
-      phi_beta_bounds,
+      phi_start,
+      phi_proposal_sd,
+      phi_bounds,
       const_bigC,
       const_lilc,
       target_accept
     );
   }
-  return phi_beta_vec;
+  return phi_vec;
 }
 
-void phi_beta::RWupdate(
-    const arma::mat& x_knots_mat, // can be beta or w vector
+void phi::RWupdate(
+    const arma::mat& x_knots_mat,
     const arma::vec& sigmasq_cur_vec
 ) {
   arma::vec x_knots = x_knots_mat.col(r);
@@ -277,13 +277,13 @@ void phi_beta::RWupdate(
     accept_ratio = static_cast<double>(accept_count) / (iter + 1);
   }
   
-  phi_beta::adapt(u_update, exp(logaccept));
+  phi::adapt(u_update, exp(logaccept));
   
   samples(iter) = phi_cur;
   iter++;
 }
 
-void phi_beta::adapt(
+void phi::adapt(
     double u,
     double alpha
 ){
@@ -300,11 +300,11 @@ void phi_beta::adapt(
   }
 }
 
-arma::vec update_beta_r_knots(
+arma::vec update_w_r_knots(
     const arma::vec& Y_knots,
     const arma::mat& X_knots,
     const arma::mat& X_knots_squared,
-    const arma::mat& beta_knots,
+    const arma::mat& w_knots,
     const arma::mat& C_phi_cur_inv,
     double sigma_r_square,
     double tau_square,
@@ -318,39 +318,39 @@ arma::vec update_beta_r_knots(
   arma::mat X_new = X_knots;
   X_new.shed_col(j); // Removes column j in-place
   
-  arma::mat beta_new = beta_knots;
-  beta_new.shed_col(j); // Removes column j in-place
+  arma::mat w_new = w_knots;
+  w_new.shed_col(j); // Removes column j in-place
   
   // Compute sum without column j
-  arma::vec sumXbeta = arma::sum(X_new % beta_new, 1);
-  arma::vec Y_tilde = Y_knots - sumXbeta;
+  arma::vec sumXw = arma::sum(X_new % w_new, 1);
+  arma::vec Y_tilde = Y_knots - sumXw;
   arma::vec result = Y_tilde / X_knots.col(j);
   arma::vec mu1 = Sigma1 * Sigmainv * result;
   
-  arma::vec beta_r_knots = arma::mvnrnd(mu1, Sigma1);
+  arma::vec w_r_knots = arma::mvnrnd(mu1, Sigma1);
   
-  return beta_r_knots;
+  return w_r_knots;
 }
 
 double update_sigma2_r(
-    const arma::vec& beta_r,
+    const arma::vec& w_r,
     double a_r,
     double b_r,
     const arma::mat& C_inv
 ) {
-  // Calculate (beta_r' C^{-1} beta_r)
-  double beta_r_sum_square = arma::as_scalar(beta_r.t() * C_inv * beta_r);
+  // Calculate (w_r' C^{-1} w_r)
+  double w_r_sum_square = arma::as_scalar(w_r.t() * C_inv * w_r);
   
   // Calculate the shape and scale parameters for the inverse gamma distribution
-  double a_r_post = a_r + beta_r.n_elem / 2.0;
-  double b_r_post = b_r + beta_r_sum_square / 2.0;
+  double a_r_post = a_r + w_r.n_elem / 2.0;
+  double b_r_post = b_r + w_r_sum_square / 2.0;
   
   //Sample sigma_r^2 from the inverse gamma distribution
   return 1.0 / arma::randg(arma::distr_param(a_r_post, 1.0 / b_r_post));
 }
 
-double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::mat& beta, double a_t, double b_t) {
-  arma::vec residual = Y - arma::sum(X % beta, 1);
+double update_tau2_r(const arma::vec& Y, const arma::mat& X, const arma::mat& w, double a_t, double b_t) {
+  arma::vec residual = Y - arma::sum(X % w, 1);
   double residual_sum_square = arma::dot(residual, residual);
   double a_t_post = a_t + Y.n_elem / 2.0;
   double b_t_post = b_t + residual_sum_square / 2.0;
