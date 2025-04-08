@@ -86,30 +86,25 @@ epsilon_plot = ggplot(data = data.frame(coords, epsilon)) +
 # show all plots in a grid
 grid.arrange(Y_plot, w_0_plot, w_1_plot, w_2_plot, epsilon_plot, ncol = 2)
 
+# compile package
+Rcpp::compileAttributes()
+# load in library for testing
+devtools::load_all()
+
 # generate knots
 ## 1 in every k^2 point on a grid is a knot
-k = 2
+## ensures knot data does not become mismatched
+knots_list = svc::simpleknots(
+  Y = Y,
+  X = as.matrix(data.frame(X_0, X_1, X_2)),
+  coords = coords,
+  k = 2
+  )
 
-lat_knots = unique(lat)
-lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
-
-lon_knots = unique(lon)
-lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
-
-knots = as.matrix(expand.grid(lat_knots, lon_knots))
-
-df = data.frame(coords, Y, X_0, X_1, X_2, w_0, w_1, w_2, epsilon)
-
-knots_df = data.frame(knots)
-colnames(knots_df) = c("lat", "lon")
-
-knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
-
-X = as.matrix(df[, c("X_0", "X_1", "X_2")])
-Y_knots = knots_df$Y
-X_knots = as.matrix(knots_df[, c("X_0", "X_1", "X_2")])
-w_knots = as.matrix(knots_df[, c("w_0", "w_1", "w_2")])
-knots = as.matrix(knots_df[, c("lat", "lon")])
+Y_knots = knots_list$Y_knots
+X_knots = knots_list$X_knots
+knots = knots_list$knots
+knots_df = knots_list$knots_data_frame
 
 Y_knots_plot = ggplot(data = knots_df) +
   geom_tile(aes(x = lon, y = lat, fill = Y)) +
@@ -118,42 +113,12 @@ Y_knots_plot = ggplot(data = knots_df) +
   scico::scale_fill_scico(palette="bam") +
   labs(x = "longitude", y = "latitude")
 
-w_0_knots_plot = ggplot(data = knots_df) +
-  geom_tile(aes(x = lon, y = lat, fill = w_0)) +
-  guides(fill = guide_legend(title = "w_0 knots")) +
-  coord_fixed() + 
-  scico::scale_fill_scico(palette="bam") +
-  labs(x = "longitude", y = "latitude")
-
-w_1_knots_plot = ggplot(data = knots_df) +
-  geom_tile(aes(x = lon, y = lat, fill = w_1)) +
-  guides(fill = guide_legend(title = "w_1 knots")) +
-  coord_fixed() + 
-  scico::scale_fill_scico(palette="bam") +
-  labs(x = "longitude", y = "latitude")
-
-w_2_knots_plot = ggplot(data = knots_df) +
-  geom_tile(aes(x = lon, y = lat, fill = w_2)) +
-  guides(fill = guide_legend(title = "w_2 knots")) +
-  coord_fixed() + 
-  scico::scale_fill_scico(palette="bam") +
-  labs(x = "longitude", y = "latitude")
-
 grid.arrange(Y_plot, Y_knots_plot, ncol = 2)
-grid.arrange(w_0_plot, w_0_knots_plot, ncol = 2)
-grid.arrange(w_1_plot, w_1_knots_plot, ncol = 2)
-grid.arrange(w_2_plot, w_2_knots_plot, ncol = 2)
 
 l = 0
 u = 30
 
 # Test function
-
-# compile package
-Rcpp::compileAttributes()
-# load in library for testing
-devtools::load_all()
-
 mcmc = 2000
 
 start = mcmc * 0.5
@@ -161,7 +126,7 @@ end = mcmc
 
 p = ncol(X)
 
-# test with uninformative priors
+# test with uninformative priors and knot data from svc::simpleknots()
 output = svc::svclm(
   Y = Y,
   X = X,
@@ -220,10 +185,39 @@ plot(y = output$tausq_samples[1:end], x = 1:end, type = "l", main = "Trace plot 
 my_summary(output$tausq_samples[start:end])
 tausq
 
+# w results
+unknowns_df = data.frame(coords, w_0, w_1, w_2, epsilon)
+knot_unknowns_df = data.frame(knots)
+colnames(knot_unknowns_df) = c("lat", "lon")
+knot_unknowns_df = merge(knot_unknowns_df, unknowns_df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+
+# w_knots = as.matrix(knots_df[, c("w_0", "w_1", "w_2")])
+
+w_0_knots_plot = ggplot(data = knot_unknowns_df) +
+  geom_tile(aes(x = lon, y = lat, fill = w_0)) +
+  guides(fill = guide_legend(title = "w_0 knots")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
+w_1_knots_plot = ggplot(data = knot_unknowns_df) +
+  geom_tile(aes(x = lon, y = lat, fill = w_1)) +
+  guides(fill = guide_legend(title = "w_1 knots")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
+w_2_knots_plot = ggplot(data = knot_unknowns_df) +
+  geom_tile(aes(x = lon, y = lat, fill = w_2)) +
+  guides(fill = guide_legend(title = "w_2 knots")) +
+  coord_fixed() + 
+  scico::scale_fill_scico(palette="bam") +
+  labs(x = "longitude", y = "latitude")
+
 # w_0
 w_0_pred_plot = ggplot(data = data.frame(coords, what0 = colMeans(output$w_samples[start:end, , 1]))) +
   geom_tile(aes(x = lon, y = lat, fill = what0)) +
-  guides(fill = guide_legend(title = "w_0")) +
+  guides(fill = guide_legend(title = "w_0 hats")) +
   coord_fixed() + 
   scico::scale_fill_scico(palette="bam") +
   labs(x = "longitude", y = "latitude")
@@ -231,7 +225,7 @@ w_0_pred_plot = ggplot(data = data.frame(coords, what0 = colMeans(output$w_sampl
 # w_1
 w_1_pred_plot = ggplot(data = data.frame(coords, what1 = colMeans(output$w_samples[start:end, , 2]))) +
   geom_tile(aes(x = lon, y = lat, fill = what1)) +
-  guides(fill = guide_legend(title = "w_1")) +
+  guides(fill = guide_legend(title = "w_1 hats")) +
   coord_fixed() + 
   scico::scale_fill_scico(palette="bam") +
   labs(x = "longitude", y = "latitude")
@@ -239,14 +233,14 @@ w_1_pred_plot = ggplot(data = data.frame(coords, what1 = colMeans(output$w_sampl
 # w_2
 w_2_pred_plot = ggplot(data = data.frame(coords, what2 = colMeans(output$w_samples[start:end, , 3]))) +
   geom_tile(aes(x = lon, y = lat, fill = what2)) +
-  guides(fill = guide_legend(title = "w_2")) +
+  guides(fill = guide_legend(title = "w_2 hats")) +
   coord_fixed() + 
   scico::scale_fill_scico(palette="bam") +
   labs(x = "longitude", y = "latitude")
 
-grid.arrange(w_0_plot, w_0_pred_plot, ncol = 2)
-grid.arrange(w_1_plot, w_1_pred_plot, ncol = 2)
-grid.arrange(w_2_plot, w_2_pred_plot, ncol = 2)
+grid.arrange(w_0_plot, w_0_knots_plot, w_0_pred_plot, ncol = 2)
+grid.arrange(w_1_plot, w_1_knots_plot, w_1_pred_plot, ncol = 2)
+grid.arrange(w_2_plot, w_2_knots_plot, w_2_pred_plot, ncol = 2)
 
 # arbitrary w_0(s)
 s = n / 2

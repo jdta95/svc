@@ -1,3 +1,5 @@
+# R function that calls svclm_cpp
+# needed in order to assign matrix and vector arg defaults
 svclm = function(
     Y,
     X,
