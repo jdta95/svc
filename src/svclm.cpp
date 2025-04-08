@@ -127,7 +127,8 @@ Rcpp::List svclm_cpp(
         phi_vec.at(j).C_phi_cur_inv,
         sigmasq_cur(j),
         tausq_cur,
-        j
+        j,
+        m
       );
 
       // predict w_j at all locations

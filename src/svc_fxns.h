@@ -133,7 +133,8 @@ arma::vec update_w_r_knots(
     const arma::mat& C_phi_cur_inv,
     double sigma_r_square,
     double tau_square,
-    int j
+    int j,
+    arma::uword m
 );
 
 arma::vec calc_x_tilde(

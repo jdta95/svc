@@ -308,12 +308,14 @@ arma::vec update_w_r_knots(
     const arma::mat& C_phi_cur_inv,
     double sigma_r_square,
     double tau_square,
-    int j
+    int j,
+    arma::uword m
 ) {
   // Calculate the covariance matrix K based on the locations and phi_r
   arma::mat Sigma0inv = C_phi_cur_inv / sigma_r_square; // Inverse of the prior covariance matrix
   arma::mat Sigmainv = arma::diagmat(X_knots_squared.col(j)) / tau_square;
-  arma::mat Sigma1 = inv_Chol(Sigma0inv + Sigmainv);
+  arma::mat Sigma1_Chol = arma::inv(arma::trimatu(stable_Chol(Sigma0inv + Sigmainv)));
+  // arma::mat Sigma1 = inv_Chol(Sigma0inv + Sigmainv);
   
   arma::mat X_new = X_knots;
   X_new.shed_col(j); // Removes column j in-place
@@ -325,9 +327,11 @@ arma::vec update_w_r_knots(
   arma::vec sumXw = arma::sum(X_new % w_new, 1);
   arma::vec Y_tilde = Y_knots - sumXw;
   arma::vec result = Y_tilde / X_knots.col(j);
-  arma::vec mu1 = Sigma1 * Sigmainv * result;
+  arma::vec mu1 = Sigma1_Chol * Sigma1_Chol.t() * Sigmainv * result;
+  // arma::vec mu1 = Sigma1 * Sigmainv * result;
+  arma::vec w_r_knots = mu1 + Sigma1_Chol * arma::randn(m);
   
-  arma::vec w_r_knots = arma::mvnrnd(mu1, Sigma1);
+  // arma::vec w_r_knots = arma::mvnrnd(mu1, Sigma1);
   
   return w_r_knots;
 }
