@@ -5,7 +5,7 @@
 Rcpp::List svclm_cpp(
     const arma::vec& Y,               // Response vector (n x 1 vector)
     const arma::mat& X,               // Design matrix (n x p matrix)
-    const arma::mat& s,               // Spatial locations (n x 2 matrix)
+    const arma::mat& coords,               // Spatial locations (n x 2 matrix)
     const arma::vec& Y_knots,         // Response vector at knots (m x 1 vector)
     const arma::mat& X_knots,         // Design matrix at knots (m x p matrix)
     const arma::mat& knots,           // Knot locations (m x 2 matrix)
@@ -35,7 +35,7 @@ Rcpp::List svclm_cpp(
   if (Y_knots.n_elem != m) {
     Rcpp::stop("Response vector at knots 'Y_knots' must have length m.");
   }
-  if (s.n_rows != n || s.n_cols != 2) {
+  if (coords.n_rows != n || coords.n_cols != 2) {
     Rcpp::stop("Spatial locations 's' must be an n x 2 matrix.");
   }
   if (knots.n_cols != 2) {
@@ -85,8 +85,8 @@ Rcpp::List svclm_cpp(
   for (unsigned int i = 0; i < m; i++) {
     for (unsigned int j = 0; j < n; j++) {
       // calculate the distance between each s and each knot
-      const_lilc(i, j) = (s(j, 0) - knots(i, 0)) * (s(j, 0) - knots(i, 0)) +
-        (s(j, 1) - knots(i, 1)) * (s(j, 1) - knots(i, 1));
+      const_lilc(i, j) = (coords(j, 0) - knots(i, 0)) * (coords(j, 0) - knots(i, 0)) +
+        (coords(j, 1) - knots(i, 1)) * (coords(j, 1) - knots(i, 1));
     }
   }
   const_lilc *= -0.5;

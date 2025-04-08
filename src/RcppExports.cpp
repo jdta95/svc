@@ -12,14 +12,14 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // svclm_cpp
-Rcpp::List svclm_cpp(const arma::vec& Y, const arma::mat& X, const arma::mat& s, const arma::vec& Y_knots, const arma::mat& X_knots, const arma::mat& knots, const arma::mat& w_knots_start, const arma::vec& sigmasq_start, const arma::vec& a_sigmasq, const arma::vec& b_sigmasq, double tausq_start, double a_tausq, double b_tausq, const arma::vec& phi_start, const arma::vec& phi_lower, const arma::vec& phi_upper, const arma::vec& phi_proposal_sd_start, double phi_target_acceptance, unsigned int mcmc);
-RcppExport SEXP _svc_svclm_cpp(SEXP YSEXP, SEXP XSEXP, SEXP sSEXP, SEXP Y_knotsSEXP, SEXP X_knotsSEXP, SEXP knotsSEXP, SEXP w_knots_startSEXP, SEXP sigmasq_startSEXP, SEXP a_sigmasqSEXP, SEXP b_sigmasqSEXP, SEXP tausq_startSEXP, SEXP a_tausqSEXP, SEXP b_tausqSEXP, SEXP phi_startSEXP, SEXP phi_lowerSEXP, SEXP phi_upperSEXP, SEXP phi_proposal_sd_startSEXP, SEXP phi_target_acceptanceSEXP, SEXP mcmcSEXP) {
+Rcpp::List svclm_cpp(const arma::vec& Y, const arma::mat& X, const arma::mat& coords, const arma::vec& Y_knots, const arma::mat& X_knots, const arma::mat& knots, const arma::mat& w_knots_start, const arma::vec& sigmasq_start, const arma::vec& a_sigmasq, const arma::vec& b_sigmasq, double tausq_start, double a_tausq, double b_tausq, const arma::vec& phi_start, const arma::vec& phi_lower, const arma::vec& phi_upper, const arma::vec& phi_proposal_sd_start, double phi_target_acceptance, unsigned int mcmc);
+RcppExport SEXP _svc_svclm_cpp(SEXP YSEXP, SEXP XSEXP, SEXP coordsSEXP, SEXP Y_knotsSEXP, SEXP X_knotsSEXP, SEXP knotsSEXP, SEXP w_knots_startSEXP, SEXP sigmasq_startSEXP, SEXP a_sigmasqSEXP, SEXP b_sigmasqSEXP, SEXP tausq_startSEXP, SEXP a_tausqSEXP, SEXP b_tausqSEXP, SEXP phi_startSEXP, SEXP phi_lowerSEXP, SEXP phi_upperSEXP, SEXP phi_proposal_sd_startSEXP, SEXP phi_target_acceptanceSEXP, SEXP mcmcSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type Y(YSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type coords(coordsSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type Y_knots(Y_knotsSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type X_knots(X_knotsSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type knots(knotsSEXP);
@@ -36,7 +36,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type phi_proposal_sd_start(phi_proposal_sd_startSEXP);
     Rcpp::traits::input_parameter< double >::type phi_target_acceptance(phi_target_acceptanceSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type mcmc(mcmcSEXP);
-    rcpp_result_gen = Rcpp::wrap(svclm_cpp(Y, X, s, Y_knots, X_knots, knots, w_knots_start, sigmasq_start, a_sigmasq, b_sigmasq, tausq_start, a_tausq, b_tausq, phi_start, phi_lower, phi_upper, phi_proposal_sd_start, phi_target_acceptance, mcmc));
+    rcpp_result_gen = Rcpp::wrap(svclm_cpp(Y, X, coords, Y_knots, X_knots, knots, w_knots_start, sigmasq_start, a_sigmasq, b_sigmasq, tausq_start, a_tausq, b_tausq, phi_start, phi_lower, phi_upper, phi_proposal_sd_start, phi_target_acceptance, mcmc));
     return rcpp_result_gen;
 END_RCPP
 }

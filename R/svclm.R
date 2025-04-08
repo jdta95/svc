@@ -3,10 +3,10 @@
 svclm = function(
     Y,
     X,
-    s,
-    Y_knots,
-    X_knots,
-    knots,
+    coords,
+    Y_knots = Y,
+    X_knots = X,
+    knots = s,
     w_knots_start = matrix(0, nrow = nrow(X_knots), ncol = ncol(X_knots)),
     sigmasq_start = rep(1, ncol(X_knots)),
     a_sigmasq = rep(0.001, ncol(X_knots)),
@@ -26,7 +26,7 @@ svclm = function(
     svclm_cpp(
       Y,
       X,
-      s,
+      coords,
       Y_knots,
       X_knots,
       knots,

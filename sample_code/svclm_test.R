@@ -40,6 +40,7 @@ w_2 = MASS::mvrnorm(1, rep(mean_2, n), sigmasq_2 * C_2)
 X_0 = rep(1, n)
 X_1 = rnorm(n)
 X_2 = rnorm(n)
+X = cbind(X_0, X_1, X_2)
 
 # generating epsilon
 tausq = 0.01
@@ -130,7 +131,7 @@ p = ncol(X)
 output = svc::svclm(
   Y = Y,
   X = X,
-  s = coords,
+  coords = coords,
   Y_knots = Y_knots,
   X_knots = X_knots,
   knots = knots,
