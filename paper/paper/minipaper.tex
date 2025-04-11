@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+% \documentclass[12pt]{article}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,11 +26,12 @@
 }
 \newcommand{\footrecall}[1]{%
     \footnotemark[\value{#1}]%
-}
+} 
 
 \newcommand{\bbR}{\mathbb{R}}
 \newcommand{\bX}{\boldsymbol{X}}
 \newcommand{\bs}{\boldsymbol{s}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\mytitle}{My title}  
 
@@ -49,13 +50,11 @@ Introduction
 
 \section{Methods}
 \label{sec:methods}
-Methods
 
 \subsection{The Model}
 \label{sec:model}
-The Model
 
-Let $s_i \in \bbR^2$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \cross 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
+Let $s_i \in \bbR^2$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
 \begin{align*}
     Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + w_0(\bs) + \epsilon(\bs),
 \end{align*}
@@ -78,7 +77,6 @@ We assign inverse-gamma conjugate priors for the variance parameters $\tau^2$ an
     & \sigma_r^2 \sim \text{Inv.Gamma}(\alpha_r, \beta_r), \text{ and}\\
     & \phi_r \sim \text{Uniform}(l_r, u_r).
 \end{align*}
-
 
 
 \section{Conclusion}
