@@ -1,0 +1,104 @@
+---
+title: "Data_analysis"
+output: html_document
+---
+
+
+## Description of the data
+
+```{r, warning=FALSE, echo=FALSE}
+library(data.table)
+library(here)
+load(here("data", "ASTER.RData"))
+library(viridis)
+library(geoR)
+```
+
+### Spatial plots
+```{r, warning=FALSE}
+library(gridExtra) 
+ # Spatial distribution of temperature
+ library(ggplot2)
+emis = ggplot(dt, aes(lon, lat)) +
+  geom_raster(aes(fill = emis)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  guides(fill = guide_legend(title = "emissivity")) +
+  ggtitle("Spatial Emissivity Distribution") +
+  coord_fixed()
+ 
+ndvi = ggplot(dt, aes(lon, lat)) +
+ geom_raster(aes(fill = ndvi)) +
+ xlab("longitude") +
+ ylab("latitude") +
+ guides(fill = guide_legend(title = "NDVI")) +
+ ggtitle("Spatial ndvi Distribution") +
+ coord_fixed()
+
+temp =  ggplot(dt, aes(lon, lat)) +
+ geom_raster(aes(fill = temp)) +
+ xlab("longitude") +
+ ylab("latitude") +
+ guides(fill = guide_legend(title = "temperature")) +
+ ggtitle("Spatial temperature Distribution") +
+ coord_fixed()
+
+# Combine plots and save: 
+library(patchwork)
+combined_plot <- emis | ndvi | temp
+ggsave("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/spatial_horizontal_stack.png",
+       combined_plot, width = 15, height = 5, dpi = 300)
+
+```
+
+### Semivariograms
+```{r}
+library(magick)
+
+img_emis <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.EMIS.png")
+img_temp <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.TEMP.png")
+img_ndvi <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.NDVI.png")
+combined_image <- image_append(c(img_emis, img_temp, img_ndvi))
+
+image_write(
+  combined_image,
+  path = "C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/semivariograms.png"
+)
+```
+
+### Model Fitting
+```{r}
+library(svc)
+knot_results = simpleknots(
+  Y =  dt$temp,
+  X = dt[,c("ndvi", "emis")],
+  coords = dt[, c("lat", "lon")],
+  k = 100  # 1 knot every 5 grid points 
+)
+
+# Extract knot components
+Y_knots = knot_results$Y_knots
+X_knots = knot_results$X_knots
+knots = knot_results$knots
+
+p = ncol(X_knots) 
+
+# Define phi range
+phi_lower = rep(0.001, p)
+phi_upper = rep(1000, p)
+
+
+
+
+fit = svclm(
+  Y = dt$temp,
+  X = as.matrix(dt[, c("ndvi", "emis")]),
+  coords = as.matrix(dt[, c("lat", "lon")]),
+  Y_knots = Y_knots,
+  X_knots = X_knots,
+  knots = knots,
+  phi_lower = phi_lower,
+  phi_upper = phi_upper,
+  mcmc = 1000
+) 
+```
