@@ -137,6 +137,7 @@ Rcpp::List svclm_cpp(
         phi_vec.at(j).C_phi_cur_inv,
         w_knots_cur.col(j)
       );
+      
     }
 
     sigmasq_samples.row(i) = sigmasq_cur.t(); // store the current sigma^2 samples

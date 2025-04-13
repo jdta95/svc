@@ -69,11 +69,17 @@ image_write(
 ### Model Fitting
 ```{r}
 library(svc)
+
+Y = dt$temp
+X = as.matrix(dt[, c("ndvi", "emis")])
+X = cbind(1, X)
+coords = as.matrix(dt[, c("lat", "lon")])
+
 knot_results = simpleknots(
-  Y =  dt$temp,
-  X = dt[,c("ndvi", "emis")],
-  coords = dt[, c("lat", "lon")],
-  k = 100  # 1 knot every 5 grid points 
+  Y = Y,
+  X = X,
+  coords = coords,
+  k = 30  # 1 knot every 5 grid points 
 )
 
 # Extract knot components
@@ -81,24 +87,27 @@ Y_knots = knot_results$Y_knots
 X_knots = knot_results$X_knots
 knots = knot_results$knots
 
-p = ncol(X_knots) 
+missing = apply(X_knots, 1, function(x) any(is.na(x))) | is.na(Y_knots)
+
+Y_knots = Y_knots[!missing]
+X_knots = X_knots[!missing,]
+knots = knots[!missing,]
+
+p = ncol(X_knots)
 
 # Define phi range
 phi_lower = rep(0.001, p)
-phi_upper = rep(1000, p)
-
-
-
+phi_upper = rep(500, p)
 
 fit = svclm(
-  Y = dt$temp,
-  X = as.matrix(dt[, c("ndvi", "emis")]),
-  coords = as.matrix(dt[, c("lat", "lon")]),
+  Y = Y,
+  X = X,
+  coords = coords,
   Y_knots = Y_knots,
   X_knots = X_knots,
   knots = knots,
   phi_lower = phi_lower,
   phi_upper = phi_upper,
   mcmc = 1000
-) 
+)
 ```

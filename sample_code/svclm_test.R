@@ -155,6 +155,8 @@ my_summary = function(x){
   ))
 }
 
+end = mcmc
+
 # all plots
 plot(y = output_LR$phi_samples[1:end, 1], x = 1:end, type = "l", main = "Trace plot of phi_0 LR", ylab = "phi_0", xlab = "Iteration")
 
@@ -185,7 +187,6 @@ plot(y = output_LR$tausq_samples[1:end], x = 1:end, type = "l", main = "Trace pl
 plot(y = output_full$tausq_samples[1:end], x = 1:end, type = "l", main = "Trace plot of tau^2 full", ylab = "tau^2", xlab = "Iteration")
 
 start = 3000
-end = mcmc
 
 # phi_0 LR
 mean(output_LR$phi_acceptance[, 1])
