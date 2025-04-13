@@ -50,6 +50,12 @@ Rcpp::List svclm_cpp(
   if (sigmasq_start.n_elem != p) {
     Rcpp::stop("Initial sigma^2 vector 'sigmasq_start' must have length p.");
   }
+  if (X_knots.has_nan()) {
+    Rcpp::stop("'X_knots' must not contain NaN values.");
+  }
+  if (Y_knots.has_nan()) {
+    Rcpp::stop("'Y_knots' must not contain NaN values.");
+  }
 
   // Rcpp::Rcout << "Check 10. " << std::endl;
 

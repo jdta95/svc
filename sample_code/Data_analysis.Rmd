@@ -88,7 +88,7 @@ X_knots = knot_results$X_knots
 knots = knot_results$knots
 
 missing = apply(X_knots, 1, function(x) any(is.na(x))) | is.na(Y_knots)
-
+# 
 Y_knots = Y_knots[!missing]
 X_knots = X_knots[!missing,]
 knots = knots[!missing,]
