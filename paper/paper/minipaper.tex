@@ -31,6 +31,7 @@
 \newcommand{\bbR}{\mathbb{R}}
 \newcommand{\bX}{\boldsymbol{X}}
 \newcommand{\bs}{\boldsymbol{s}}
+\newcommand{\Ytilde}{\tilde{Y}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\mytitle}{My title}  
@@ -79,7 +80,7 @@ We implement a Markov Chain Monte Carlo (MCMC) algorithm with three key innovati
 \section{Methods}
 \label{sec:methods}
 
-\subsection{The Model}
+\subsection{SVC Model}
 \label{sec:model}
 
 Let $s_i \in \bbR^2$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
@@ -95,7 +96,7 @@ For convenience, we will treat $w_0(\bs)$ as the regression coefficients corresp
 For each $w_r(\bs)$, we assign a Gaussian process (GP) prior with squared exponential covariance, i.e.
 \begin{align*}
     w_r &\sim \text{GP}(0, C(s, s')), \text{ where}\\
-    C(s, s') &= \sigma_r^2\exp{\phi_r^{-1}\|s-s'\|^2}.
+    C(s, s') &= \sigma_r^2\exp\{\phi_r^{-1}\|s-s'\|^2\}.
 \end{align*}
 We refer to $C(\cdot, \cdot)$ as the covariance function, which calculates the covariance between two locations $s$ and $s'$. Squared exponential covariance is a commonly used covariance function due to useful properties such as infinite smoothness and gradual decrease in covariance with distance. The parameter $\sigma_r^2$ is the spatial variance and $\phi_r$ is the spatial decay, which indicates how quickly correlation decreases with the squared distance.
 
@@ -106,29 +107,68 @@ We assign inverse-gamma conjugate priors for the variance parameters $\tau^2$ an
     & \phi_r \sim \text{Uniform}(l_r, u_r).
 \end{align*}
 
+\subsection{MCMC Algorithm}
+\label{sec:mcmc}
+
+The primary function in the svc package, svclm, samples from the joint posterior distribution of $w_r(\bs), \phi_r, \sigma_r^2,$ and $\tau^2$, for $r = 0, \dots, p$ using a Gibbs sampler. We will explain how each parameter is sampled at iteration $t+1$.
+
+\subsubsection{Spatial Decay}
+\label{sec:spatial_decay}
+
+The parameter $\phi_r^{(t+1)}$ is updated via a random walk Metropolis algorithm. Because $\phi_r^{(t)} \in (l_r, u_r)$, each proposal is calculated as 
+\begin{align*}
+    \phi_r' &= f^{-1}(f(\phi_r^{(t)}) + U) = l_r + \frac{u_r - l_r}{1 + \exp\left\{\log\left(\frac{u_r - l_r}{\phi_r^{(t)} - l_r} - 1\right) + U\right\}},
+\end{align*}
+where $U$ is sampled from a normal distribution with mean $0$.
+
+The initial standard deviation for $U$ is specified using the "phi\_proposal\_sd\_start" argument or is $1$ by default. Then the standard deviation is updated at each iteration via a Robust Adaptive Metropolis (RAM) algorithm (Vihola 2012).
+
+\subsubsection{Spatially Varying Coefficients}
+\label{sec:svcs}
+
+Let $\Ytilde(\bs) = Y(\bs) - \sum_{j\neq r} X_j(\bs)w_j^{(t)}(\bs)$. Then
+\begin{align*}
+    \frac{\Ytilde}{X_r}(\bs) | w_r^{(t)}(\bs), \tau^2 \sim \text{MVN} \left(w_r^{(t)}(\bs), \tau^{2(t)} \text{diag}\left( \frac{1}{X_r^2(\bs)} \right)\right) := \text{MVN} \left(\mu, \Sigma\right).
+\end{align*}
+Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, \sigma_r^{2(t)} C\left(\phi_r^{(t)}\right)\right) := \text{MVN}\left(0, \Sigma_0\right)$, we sample $w_r^{(t+1)}(\bs)$ from MVN$(\mu_1, \Sigma_1)$, where
+\begin{align*}
+    \Sigma_1 &= \left(\Sigma_0^{-1} + \Sigma^{-1}\right) \text{ and }
+    \mu_1 = \Sigma_1 \Sigma^{-1} \frac{\Ytilde}{X_r}(s).
+\end{align*}
+
+\subsubsection{Spatial Variance}
+\label{sec:spatial_variance}
+
+We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta_r + w_r^{(t)}(\bs)^{\top} C\left(\phi_r^{(t)}\right)^{-1} w_r^{(t)}(\bs)\right)$.
+
+\subsubsection{Nugget}
+\label{sec:nugget}
+
+We sample $\tau^{2(t+1)}$ from Inv.Gamma$\left(\alpha_t + \frac{n}{2}, \beta_t + \frac{1}{2} \left(Y(\bs) - \sum_{j=0}^p X_r(\bs)w_r^{(t)}(\bs) \right)\right)$.
+
 \section{Data Analysis}
 \label{sec:data analysis}
 The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures vegetation health/greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
-Figure ref{fig:spatial_patterns} below reveals the spatial  distributions of the variables in the dataset.
-\begin{figure}[h]
-\centering
-\includegraphics[width=\textwidth]{figures/spatial_horizontal_stack.png}
-\caption{
-  Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
-}
-\label{fig:spatial_patterns}
-\end{figure}
-
-Emissivity ranges from 0.88 to 0.96. Light blue zones (ε > 0.94) displays dense vegetation/water bodies (high thermal emission efficiency)
-while dark blue clusters (ε ≈ 0.88-0.90) represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
-Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
-We computed the empirical semivariograms for the variables in the dataset. 
-\begin{figure}[h]
-\centering
-\includegraphics[width=\textwidth]{figures/semivariograms.png}
-\caption{Empirical semivariograms for emissivity, temperature and NDVI}
-\label{fig:semivariograms}
-\end{figure}
+% Figure ref{fig:spatial_patterns} below reveals the spatial  distributions of the variables in the dataset.
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{figures/spatial_horizontal_stack.png}
+% \caption{
+%   Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
+% }
+% \label{fig:spatial_patterns}
+% \end{figure}
+% 
+% Emissivity ranges from 0.88 to 0.96. Light blue zones (ε > 0.94) displays dense vegetation/water bodies (high thermal emission efficiency)
+% while dark blue clusters (ε ≈ 0.88-0.90) represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
+% Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
+% We computed the empirical semivariograms for the variables in the dataset. 
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{figures/semivariograms.png}
+% \caption{Empirical semivariograms for emissivity, temperature and NDVI}
+% \label{fig:semivariograms}
+% \end{figure}
 The variables showed moderate spatial autocorrelation with low to moderate variance.
 
 \subsection{Model fitting}
