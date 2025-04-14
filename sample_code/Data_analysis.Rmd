@@ -58,14 +58,14 @@ ggsave("~/svc/figures/spatial_horizontal_stack.png",
 ```{r}
 library(magick)
 
-img_emis <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.EMIS.png")
-img_temp <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.TEMP.png")
-img_ndvi <- image_read("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/sv.NDVI.png")
+img_emis <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.EMIS.png")
+img_temp <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.TEMP.png")
+img_ndvi <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.NDVI.png")
 combined_image <- image_append(c(img_emis, img_temp, img_ndvi))
 
 image_write(
   combined_image,
-  path = "C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/semivariograms.png"
+  path = "C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/semivariograms.png"
 )
 ```
 
@@ -150,12 +150,14 @@ trace_long <- trace_data %>%
   pivot_longer(-iteration, names_to = "parameter", values_to = "value")
 
 # Plot
-ggplot(trace_long, aes(x = iteration, y = value)) +
+traceplots = ggplot(trace_long, aes(x = iteration, y = value)) +
   geom_line(alpha = 0.7) +
   facet_wrap(~ parameter, scales = "free_y", ncol = 2) +
   labs(title = "MCMC Trace Plots", x = "Iteration", y = "Parameter Value") +
   theme_minimal()
 
+ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/traceplots.png",
+       traceplots, width = 15, height = 5, dpi = 300)
 ```
 
 ```{r, warning=FALSE}

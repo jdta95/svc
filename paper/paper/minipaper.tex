@@ -149,33 +149,74 @@ We sample $\tau^{2(t+1)}$ from Inv.Gamma$\left(\alpha_t + \frac{n}{2}, \beta_t +
 \section{Data Analysis}
 \label{sec:data analysis}
 The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures vegetation health/greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
-% Figure ref{fig:spatial_patterns} below reveals the spatial  distributions of the variables in the dataset.
-% \begin{figure}[h]
-% \centering
-% \includegraphics[width=\textwidth]{figures/spatial_horizontal_stack.png}
-% \caption{
-%   Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
-% }
-% \label{fig:spatial_patterns}
-% \end{figure}
-% 
-% Emissivity ranges from 0.88 to 0.96. Light blue zones (ε > 0.94) displays dense vegetation/water bodies (high thermal emission efficiency)
-% while dark blue clusters (ε ≈ 0.88-0.90) represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
-% Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
-% We computed the empirical semivariograms for the variables in the dataset. 
-% \begin{figure}[h]
-% \centering
-% \includegraphics[width=\textwidth]{figures/semivariograms.png}
-% \caption{Empirical semivariograms for emissivity, temperature and NDVI}
-% \label{fig:semivariograms}
-% \end{figure}
+Figure ref{fig:spatial_patterns} below reveals the spatial  distributions of the variables in the dataset.
+ \begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{figures/spatial_horizontal_stack.png}
+ \caption{
+   Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
+ }
+ \label{fig:spatial_patterns}
+ \end{figure}
+ 
+ Emissivity ranges from 0.88 to 0.96. Light blue zones (ε > 0.94) displays dense vegetation/water bodies (high thermal emission efficiency)
+ while dark blue clusters (ε ≈ 0.88-0.90) represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
+ Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
+ We computed the empirical semivariograms for the variables in the dataset. 
+ \begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{figures/semivariograms.png}
+ \caption{Empirical semivariograms for emissivity, temperature and NDVI}
+ \label{fig:semivariograms}
+ \end{figure}
 The variables showed moderate spatial autocorrelation with low to moderate variance.
+\subsection{Model}
 
 \subsection{Model fitting}
+\textbf{Model Specification}\newline
+We modeled land surface temperature (LST) using a spatially varying coefficient (SVC) framework:
 
+\begin{align}
+\text{Temp}(s) &= \beta_0(s) + \beta_{\text{NDVI}}(s)\cdot\text{NDVI} + \beta_{\text{Emis}}(s)\cdot\text{Emissivity} + \epsilon(s) \
+\epsilon(s) &\sim \text{N}(0, \tau^2) \
+\beta_r(s) &\sim \text{GP}(0, \sigma_r^2 \exp(-\phi_r^{-1}|s-s'|^2)) \quad \text{for } r \in {0, \text{NDVI}, \text{Emis}}
+\end{align}
 
+\textbf{Prior specifications:} We specified weakly informative priors\newline
+\begin{itemize}
+\item Spatial variance: $\sigma_r^2 \sim \text{Inv-Gamma}(0.001, 0.001)$  
+\item Spatial range: $\phi_r \sim \text{Uniform}(0.001, 500)$ km  
+\item Nugget effect: $\tau^2 \sim \text{Inv-Gamma}(0.001, 0.001)$
+\end{itemize}
 
+The computational implementation featured Knot-based Approximation. We selected 1 knot per 10 grid cells ($k=10$) using the  $\texttt{simpleknots()}$ function. Removed knots with missing data.
+\subsection{Results}
+\textbf{Convergence Diagnostics}\newline
+We made trace plots after burn-in to check for convergence. 
 
+\begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{figures/traceplots.png}
+ \caption{Trace plots for the parameters in the model}
+ \label{fig:traceplots}
+ \end{figure}
+Some parameters display stable and well-mixed behavior, suggesting convergence, while others show trends or irregular jumps which was expected in our setting.
+
+\textbf{Interpretation of Coefficient Surfaces} \newline
+Below is a plot of the posterior means of the coefficients over space.
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{figures/model_means.png}
+ \captionl{Spatially varying coefficient surfaces for (A) NDVI and (B) Emissivity effects on land surface temperature}
+ \label{fig:posterior means}
+ \end{figure}
+ The posterior mean NDVI coefficients show Strong negative effects (cooling) across the entire study region, with values ranging from -0.7310 to -0.7300. 
+ Each unit increase in NDVI corresponds to about $0.73^\circ C$ decrease in land surface temperature across space.
+ The emissivity coefficients reveal strong positive associations (mean $\beta_{Emis} \approx 330$) which implies that across space, a unit increase in emissivity increase temperature.
+ 
+ 
+ 
 \section{Conclusion}
 Conclusion
 
