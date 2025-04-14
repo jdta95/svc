@@ -46,7 +46,10 @@ temp =  ggplot(dt, aes(lon, lat)) +
 # Combine plots and save: 
 library(patchwork)
 combined_plot <- emis | ndvi | temp
-ggsave("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/spatial_horizontal_stack.png",
+#ggsave("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/spatial_horizontal_stack.png",
+ #      combined_plot, width = 15, height = 5, dpi = 300)
+
+ggsave("~/svc/figures/spatial_horizontal_stack.png",
        combined_plot, width = 15, height = 5, dpi = 300)
 
 ```
@@ -73,13 +76,13 @@ library(svc)
 Y = dt$temp
 X = as.matrix(dt[, c("ndvi", "emis")])
 X = cbind(1, X)
-coords = as.matrix(dt[, c("lat", "lon")])
+coords = as.matrix(dt[, c("lat", "lon")]) 
 
 knot_results = simpleknots(
   Y = Y,
   X = X,
   coords = coords,
-  k = 30  # 1 knot every 5 grid points 
+  k = 10 
 )
 
 # Extract knot components
@@ -108,6 +111,133 @@ fit = svclm(
   knots = knots,
   phi_lower = phi_lower,
   phi_upper = phi_upper,
-  mcmc = 1000
+  mcmc = 5000
 )
+
+saveRDS(fit, file = "fit_model.rds")
 ```
+
+
+
+##  CONVERGENCE DIAGNOSTICS
+
+```{r}
+library(tidyverse)
+fit = readRDS("fit_model.rds")
+
+burnin <- 4000
+
+# Subset after burn-in
+phi_samples <- fit$phi_samples[(burnin + 1):nrow(fit$phi_samples), ]
+sigmasq_samples <- fit$sigmasq_samples[(burnin + 1):nrow(fit$sigmasq_samples), ]
+tausq_samples <- fit$tausq_samples[(burnin + 1):length(fit$tausq_samples)]
+
+
+trace_data <- data.frame(
+  iteration = 1:nrow(phi_samples),
+  phi_1 = phi_samples[, 1],
+  phi_2 = phi_samples[, 2],
+  phi_3 = phi_samples[, 3],
+  sigmasq_1 = sigmasq_samples[, 1],
+  sigmasq_2 = sigmasq_samples[, 2],
+  sigmasq_3 = sigmasq_samples[, 3],
+  tausq = tausq_samples
+)
+
+
+# Pivot to long format
+trace_long <- trace_data %>%
+  pivot_longer(-iteration, names_to = "parameter", values_to = "value")
+
+# Plot
+ggplot(trace_long, aes(x = iteration, y = value)) +
+  geom_line(alpha = 0.7) +
+  facet_wrap(~ parameter, scales = "free_y", ncol = 2) +
+  labs(title = "MCMC Trace Plots", x = "Iteration", y = "Parameter Value") +
+  theme_minimal()
+
+```
+
+```{r, warning=FALSE}
+burnin <- 4000
+w_postburn <- fit$w_samples[(burnin + 1):dim(fit$w_samples)[1], , ]
+
+w_means_df <- data.frame(
+  lat = coords[, "lat"],
+  lon = coords[, "lon"],
+  w1 = colMeans(w_postburn[, , 1]),
+  w2 = colMeans(w_postburn[, , 2]),
+  w3 = colMeans(w_postburn[, , 3])
+)
+
+library(ggplot2)
+library(scico)
+
+A = ggplot(w_means_df, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w2)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "NDVI Effect")) +
+  ggtitle("Spatial Distribution of Posterior Mean (NDVI)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+
+B = ggplot(w_means_df, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Emissivity Effect")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Emissivity)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+library(patchwork)
+combined_plot_m = A | B 
+ggsave("~/svc/figures/model_means.png",
+       combined_plot_m, width = 15, height = 5, dpi = 300)
+```
+
+```{r}
+plot(w_postburn[,62,2], type = 'l',
+main = "Beta NDVI - Location 62", ylab = "Coefficient Value")
+
+plot(w_postburn[,62,3], type = 'l',
+main = "Beta Emis - Location 62", ylab = "Coefficient Value")
+```
+### Acceptance rate
+```{r}
+total_accepted <- sum(fit$phi_acceptance == 1)
+total_elements <- length(fit$phi_acceptance)
+acceptance_rate <- total_accepted / total_elements
+acceptance_rate
+```
+
+### Plot of Knot locations
+```{r}
+# Convert knots to a data frame
+knot_df = data.frame(
+  lat = knots[, 1],
+  lon = knots[, 2]
+)
+
+kts  = ggplot(dt, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = temp)) + 
+  geom_point(data = knot_df, aes(x = lon, y = lat),
+             color = "black", fill = "black", size = 1.2, shape = 4, stroke = 0.3) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "temp")) +  # Change legend title as needed
+  ggtitle("Spatial Distribution with Knot Locations(Crosses Represent Knots)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "bam") +
+  theme_minimal()
+
+ggsave("~/svc/figures/knot_locations.png",
+       kts, width = 15, height = 5, dpi = 300)
+```
+
