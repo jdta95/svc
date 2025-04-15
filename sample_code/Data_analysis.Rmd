@@ -149,7 +149,7 @@ ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/semivariograms.png
 library(svc)
 
 Y = dt$temp
-X = as.matrix(dt[, c("ndvi", "emis")])
+X = as.matrix(dt[, c("ndvi", "emis","elev")])
 X = cbind(1, X)
 coords = as.matrix(dt[, c("lat", "lon")]) 
 
@@ -157,7 +157,7 @@ knot_results = simpleknots(
   Y = Y,
   X = X,
   coords = coords,
-  k = 10 
+  k = 30 
 )
 
 # Extract knot components
@@ -188,6 +188,7 @@ fit = svclm(
   phi_upper = phi_upper,
   mcmc = 5000
 )
+
 
 saveRDS(fit, file = "fit_model.rds")
 ```
