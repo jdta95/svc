@@ -9,7 +9,7 @@ output: html_document
 ```{r, warning=FALSE, echo=FALSE}
 library(data.table)
 library(here)
-load(here("data", "ASTER.RData"))
+load(here("data", "ASTER2.RData"))
 library(viridis)
 library(geoR)
 ```
@@ -43,30 +43,105 @@ temp =  ggplot(dt, aes(lon, lat)) +
  ggtitle("Spatial temperature Distribution") +
  coord_fixed()
 
+elev = ggplot(dt, aes(lon, lat)) +
+ geom_raster(aes(fill = elev)) +
+ xlab("longitude") +
+ ylab("latitude") +
+ guides(fill = guide_legend(title = "elevation")) +
+ ggtitle("Spatial elevation Distribution") +
+ coord_fixed()
+
+
 # Combine plots and save: 
 library(patchwork)
-combined_plot <- emis | ndvi | temp
+combined_plot <- (emis | ndvi) / (temp | elev)
 #ggsave("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/spatial_horizontal_stack.png",
  #      combined_plot, width = 15, height = 5, dpi = 300)
 
-ggsave("~/svc/figures/spatial_horizontal_stack.png",
-       combined_plot, width = 15, height = 5, dpi = 300)
+ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/spatial_horizontal_stack.png",
+       combined_plot, width = 30, height = 10, dpi = 300)
 
 ```
 
 ### Semivariograms
 ```{r}
-library(magick)
-
-img_emis <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.EMIS.png")
-img_temp <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.TEMP.png")
-img_ndvi <- image_read("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/sv.NDVI.png")
-combined_image <- image_append(c(img_emis, img_temp, img_ndvi))
-
-image_write(
-  combined_image,
-  path = "C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/semivariograms.png"
+# subset data further for more efficient semivariogram analysis
+lat.sub = dt[, unique(lat)]
+lat.sub = lat.sub[seq(1, length(lat.sub), by = 2)]
+lon.sub = dt[, unique(lon)]
+lon.sub = lon.sub[seq(1, length(lon.sub), by = 2)]
+dt.sub = dt[lat %in% lat.sub & lon %in% lon.sub]
+dt.sub = dt.sub[complete.cases(dt.sub[, c("lat", "lon", "ndvi", "temp")]), ]
+# semivariogram of emissivity
+sv = variog(
+coords = cbind(dt.sub[!is.na(emis), lat], dt.sub[!is.na(emis), lon]),
+data = dt.sub[!is.na(emis), emis]
 )
+sv.dt = data.table(
+dists = sv$u,
+variogram = sv$v,
+npairs = sv$n,
+sd = sv$sd
+)
+
+emis_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
+geom_point() +
+labs(title = "Emissivity semivariogram")
+
+# semivariogram of NDVI
+sv = variog(
+coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+data = dt.sub[, ndvi]
+)
+sv.dt = data.table(
+dists = sv$u,
+variogram = sv$v,
+npairs = sv$n,
+sd = sv$sd
+)
+
+ndvi_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
+geom_point() +
+labs(title = "NDVI semivariogram")
+
+
+# semivariogram of temp
+sv = variog(
+coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+data = dt.sub[, temp]
+)
+sv.dt = data.table(
+dists = sv$u,
+variogram = sv$v,
+npairs = sv$n,
+sd = sv$sd
+)
+
+temp_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
+geom_point() +
+labs(title = "Temperature semivariogram")
+
+# semivariogram of Elev
+sv = variog(
+coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+data = dt.sub[, elev]
+)
+sv.dt = data.table(
+dists = sv$u,
+variogram = sv$v,
+npairs = sv$n,
+sd = sv$sd
+)
+
+elev_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
+geom_point() +
+labs(title = "ELevation semivariogram")
+
+combined_plot_sv <- (emis_sv | ndvi_sv) / (temp_sv | elev_sv)
+ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/semivariograms.png",
+       combined_plot_sv, width = 30, height = 10, dpi = 300)
+
+
 ```
 
 ### Model Fitting
