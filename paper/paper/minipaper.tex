@@ -146,6 +146,60 @@ We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta
 
 We sample $\tau^{2(t+1)}$ from Inv.Gamma$\left(\alpha_t + \frac{n}{2}, \beta_t + \frac{1}{2} \left(Y(\bs) - \sum_{j=0}^p X_r(\bs)w_r^{(t)}(\bs) \right)\right)$.
 
+\section{Simulation}
+\label{sec:simulation}
+The purposes of the simulation are to 
+\begin{itemize}
+    \item assess the performance of SVCLM,
+    \item compare the differences in performance between between full and low rank for SVCLM,
+    \item compare the SVCLM with varycoef and spBayes.
+\end{itemize}
+
+\subsection{Metrics}
+To achieve the purposes of the simulation study, we used the following metrics to evaluate SVCLM:
+\begin{itemize}
+    \item Bias,
+    \item RMSE,
+    \item Computational cost (seconds).
+\end{itemize}
+
+\subsection{Data generating mechanisms}
+We first generate a grid consisting of 21 evenly spaced longitudes and 21 evenly spaced latitudes for our coefficients to vary on.
+
+Then, we focus on generating spatial random effects $w$, two regression coefficients $\beta_1, \beta_2$, and error term $\epsilon$.
+
+Priors of $w$:
+\begin{itemize}
+    \item $\sigma^2_w = 0.1$ 
+    \item $\phi_w =2$
+    \item $w\sim N(1_n, \sigma^2_w\times\phi_w(s))$
+\end{itemize}
+
+Priors of $\beta_1$:
+\begin{itemize}
+    \item $\sigma^2_{\beta_1} = 0.1$ 
+    \item $\phi_{\beta_1} =2$
+    \item ${\beta_1}\sim N(1_n, \sigma^2_{\beta_1}\times\phi_{\beta_1}(s))$
+\end{itemize}
+
+Priors of $\beta_2$:
+\begin{itemize}
+    \item $\sigma^2_{\beta_2} = 0.1$ 
+    \item $\phi_{\beta_2} =2$
+    \item ${\beta_2}\sim N(1_n, \sigma^2_{\beta_2}\times\phi_{\beta_2}(s))$
+\end{itemize}
+
+Finally, we generate $X$ and $Y$.
+
+\begin{itemize}
+    \item $X_1 \sim N(0,1)$
+    \item $X_2 \sim N(5,1)$
+    \item $Y = \beta_1 \times X_1 + \beta_2 \times X_2 + w + \epsilon$.
+\end{itemize}
+
+\subsection{Global settings and output}
+We will replicate the comparison for 1000 times to establish precession and reduce the variance in sampling draw.
+
 \section{Data Analysis}
 \label{sec:data analysis}
 The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures vegetation health/greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
