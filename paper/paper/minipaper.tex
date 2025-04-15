@@ -203,23 +203,24 @@ We will replicate the comparison for 1000 times to establish precession and redu
 \section{Data Analysis}
 \label{sec:data analysis}
 The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures vegetation health/greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
-Figure ref{fig:spatial_patterns} below reveals the spatial  distributions of the variables in the dataset.
+Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the variables in the dataset.
+
  \begin{figure}[h]
  \centering
- \includegraphics[width=\textwidth]{figures/spatial_horizontal_stack.png}
+ \includegraphics[width=\textwidth]{../../figures/spatial_horizontal_stack.png}
  \caption{
    Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
  }
- \label{fig:spatial_patterns}
+ \label{fig:spatialpatterns}
  \end{figure}
  
- Emissivity ranges from 0.88 to 0.96. Light blue zones (ε > 0.94) displays dense vegetation/water bodies (high thermal emission efficiency)
- while dark blue clusters (ε ≈ 0.88-0.90) represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
+ Emissivity ranges from 0.88 to 0.96. Light blue zones $(\epsilon > 0.94)$ displays dense vegetation/water bodies (high thermal emission efficiency)
+ while dark blue clusters $(\epsilon \approx 0.88-0.90)$ represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
  Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
  We computed the empirical semivariograms for the variables in the dataset. 
  \begin{figure}[h]
  \centering
- \includegraphics[width=\textwidth]{figures/semivariograms.png}
+ \includegraphics[width=\textwidth]{../../figures/semivariograms.png}
  \caption{Empirical semivariograms for emissivity, temperature and NDVI}
  \label{fig:semivariograms}
  \end{figure}
@@ -250,7 +251,7 @@ We made trace plots after burn-in to check for convergence.
 
 \begin{figure}[h]
  \centering
- \includegraphics[width=\textwidth]{figures/traceplots.png}
+ \includegraphics[width=\textwidth]{../../figures/traceplots.png}
  \caption{Trace plots for the parameters in the model}
  \label{fig:traceplots}
  \end{figure}
@@ -261,8 +262,8 @@ Below is a plot of the posterior means of the coefficients over space.
 
 \begin{figure}[h]
  \centering
- \includegraphics[width=\textwidth]{figures/model_means.png}
- \captionl{Spatially varying coefficient surfaces for (A) NDVI and (B) Emissivity effects on land surface temperature}
+ \includegraphics[width=\textwidth]{../../figures/model_means.png}
+ \caption{Spatially varying coefficient surfaces for (A) NDVI and (B) Emissivity effects on land surface temperature}
  \label{fig:posterior means}
  \end{figure}
  The posterior mean NDVI coefficients show Strong negative effects (cooling) across the entire study region, with values ranging from -0.7310 to -0.7300. 
