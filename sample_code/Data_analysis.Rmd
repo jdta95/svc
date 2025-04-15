@@ -9,7 +9,7 @@ output: html_document
 ```{r, warning=FALSE, echo=FALSE}
 library(data.table)
 library(here)
-load(here("data", "ASTER2.RData"))
+load(here("data", "ASTER.RData"))
 library(viridis)
 library(geoR)
 ```
@@ -43,18 +43,18 @@ temp =  ggplot(dt, aes(lon, lat)) +
  ggtitle("Spatial temperature Distribution") +
  coord_fixed()
 
-elev = ggplot(dt, aes(lon, lat)) +
- geom_raster(aes(fill = elev)) +
- xlab("longitude") +
- ylab("latitude") +
- guides(fill = guide_legend(title = "elevation")) +
- ggtitle("Spatial elevation Distribution") +
- coord_fixed()
+#elev = ggplot(dt, aes(lon, lat)) +
+ #geom_raster(aes(fill = elev)) +
+ #xlab("longitude") +
+ #ylab("latitude") +
+ #guides(fill = guide_legend(title = "elevation")) +
+ #ggtitle("Spatial elevation Distribution") +
+ #coord_fixed()
 
 
 # Combine plots and save: 
 library(patchwork)
-combined_plot <- (emis | ndvi) / (temp | elev)
+combined_plot <- emis | ndvi | temp 
 #ggsave("C:/Lecture slides/Lecture slides/Lecture Slides/Winter 2025/Biostat 815/Quiz2/svc/figures/spatial_horizontal_stack.png",
  #      combined_plot, width = 15, height = 5, dpi = 300)
 
@@ -122,22 +122,22 @@ geom_point() +
 labs(title = "Temperature semivariogram")
 
 # semivariogram of Elev
-sv = variog(
-coords = cbind(dt.sub[, lat], dt.sub[, lon]),
-data = dt.sub[, elev]
-)
-sv.dt = data.table(
-dists = sv$u,
-variogram = sv$v,
-npairs = sv$n,
-sd = sv$sd
-)
+#sv = variog(
+#coords = cbind(dt.sub[, lat], dt.sub[, lon]),
+#data = dt.sub[, elev]
+#)
+#sv.dt = data.table(
+#dists = sv$u,
+#variogram = sv$v,
+#npairs = sv$n,
+#sd = sv$sd
+#)
 
-elev_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
-geom_point() +
-labs(title = "ELevation semivariogram")
+#elev_sv = ggplot(sv.dt, aes(x = dists, y = variogram)) +
+#geom_point() +
+#labs(title = "ELevation semivariogram")
 
-combined_plot_sv <- (emis_sv | ndvi_sv) / (temp_sv | elev_sv)
+combined_plot_sv <- emis_sv | ndvi_sv|temp_sv 
 ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/semivariograms.png",
        combined_plot_sv, width = 30, height = 10, dpi = 300)
 
@@ -233,7 +233,7 @@ traceplots = ggplot(trace_long, aes(x = iteration, y = value)) +
   theme_minimal()
 
 ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/traceplots.png",
-       traceplots, width = 15, height = 5, dpi = 300)
+       traceplots, width = 20, height = 10, dpi = 300)
 ```
 
 ```{r, warning=FALSE}
@@ -281,11 +281,17 @@ ggsave("~/svc/figures/model_means.png",
 ```
 
 ```{r}
-plot(w_postburn[,62,2], type = 'l',
-main = "Beta NDVI - Location 62", ylab = "Coefficient Value")
+# Save Beta NDVI - Location 62
+png("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/beta_ndvi_location62.png", width = 800, height = 600)
+plot(w_postburn[, 62, 2], type = 'l',
+     main = "Beta NDVI - Location 62", ylab = "Coefficient Value")
+dev.off()
 
-plot(w_postburn[,62,3], type = 'l',
-main = "Beta Emis - Location 62", ylab = "Coefficient Value")
+# Save Beta Emissivity - Location 62
+png("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/beta_emis_location62.png", width = 800, height = 600)
+plot(w_postburn[, 62, 3], type = 'l',
+     main = "Beta Emissivity - Location 62", ylab = "Coefficient Value")
+dev.off()
 ```
 ### Acceptance rate
 ```{r}
@@ -319,3 +325,60 @@ ggsave("~/svc/figures/knot_locations.png",
        kts, width = 15, height = 5, dpi = 300)
 ```
 
+
+### Predictions
+
+```{r}
+missing_idx = which(is.na(dt$temp))
+
+X = as.matrix(dt[, c("ndvi", "emis")])
+X = cbind(1, X)
+X_missing <- X[missing_idx, ]  # rows with NA in temp
+w_missing <- w_means_df[missing_idx, c("w1", "w2", "w3")]
+
+temp_pred <- rowSums(X_missing * as.matrix(w_missing))
+
+
+coords_missing <- coords[missing_idx, ]
+
+pred_df <- data.frame(
+  lon = coords_missing[, "lon"],
+  lat = coords_missing[, "lat"],
+  temp_pred = temp_pred
+)
+
+library(ggplot2)
+
+ggplot(pred_df, aes(lon, lat)) +
+ geom_raster(aes(fill = temp_pred)) +
+ xlab("longitude") +
+ ylab("latitude") +
+ guides(fill = guide_legend(title = "Predicted temperature")) +
+ ggtitle("Predicted temperature Distribution") +
+ coord_fixed()
+
+ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/traceplots.png",
+       traceplots, width = 20, height = 10, dpi = 300)
+```
+### Predcitons for whole temperature surface
+```{r}
+X_full <- as.matrix(dt[, c("ndvi", "emis")])
+X_full <- cbind(1, X_full)  # Add intercept
+w_all <- w_means_df[, c("w1", "w2", "w3")]
+dt$temp_pred_full <- rowSums(X_full * as.matrix(w_all))
+
+pred_temp = ggplot(dt, aes(lon, lat)) +
+ geom_raster(aes(fill = temp_pred_full)) +
+ xlab("longitude") +
+ ylab("latitude") +
+ guides(fill = guide_legend(title = "Predicted temperature")) +
+ ggtitle("Predicted temperature Distribution") +
+ coord_fixed()
+
+library(patchwork)
+combined_plot_pred = temp | pred_temp
+
+ggsave("C:/Lecture Slides/Winter 2025/Biostat 815/svc/figures/predictions.png",
+       combined_plot_pred, width = 20, height = 10, dpi = 300)
+
+```

@@ -49,34 +49,12 @@
 \label{sec:intro}
 Spatial heterogeneity in environmental processes presents significant challenges for traditional regression modeling approaches. Consider air pollution monitoring across an urban-rural gradient: the relationship between particulate matter (PM2.5) concentrations and predictor variables like traffic density or industrial emissions often varies substantially across space. Global regression models that assume constant coefficients fail to capture these localized relationships, potentially leading to incorrect scientific conclusions and suboptimal policy decisions.
 Our work develops a computationally efficient Bayesian implementation of spatially varying coefficient (SVC) models, which address this limitation by allowing regression coefficients to change smoothly over space. Let $s_i \in \bbR^2$ for each $i = 1, \dots, n$ denote spatial locations where we observe response variables $Y(\bs)$ and covariates $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$. The SVC model specification:
-\begin{align*}
-    Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + \epsilon(\bs),
-\end{align*}
-
-where $w_r(\bs)$ are spatially varying coefficients modeled as Gaussian processes:
-
-\begin{align*}
-    w_r &\sim \text{GP}(0, C(s, s')) \\
-    C(s, s') &= \sigma_r^2\exp{(-\phi_r^{-1}\|s-s'\|^2)}
-\end{align*}
-with $\epsilon(\bs) \sim \text{MVN}(0, \tau^2 I_n)$ representing measurement error.
-The key innovations in our implementation include:
-
-\subsection*{Computational Algorithm}
-We implement a Markov Chain Monte Carlo (MCMC) algorithm with three key innovations:
-
-\begin{enumerate}
-    \item \textbf{Low rank Gaussian Process}: Using knots to reduce the $O(n^3)$ computational complexity of Gaussian process models.
-    
-    \item \textbf{Adaptive Metropolis-Hastings}: For updating spatial range parameters $\phi_r$ with automatic tuning of proposal distributions:
-    \begin{align*}
-        \phi_r^{(new)} = \phi_r^{(current)} + \epsilon, \quad \epsilon \sim N(0, \sigma_{adapt}^2)
-    \end{align*}
-    where $\sigma_{adapt}^2$ adjusts based on acceptance rates during burn-in.
-    
-    \item \textbf{Efficient linear algebra}: Utilizing Cholesky decompositions for all covariance matrix operations, with pre-computation of constant distance matrices:
-\end{enumerate}
-
+We modeled spatial variation in outcomes through location-specific linear combinations of covariates, where each covariate's effect is allowed to vary smoothly across space using Gaussian processes. 
+This flexible approach captures complex, location-dependent relationships while accounting for measurement error through an independent noise term. Our computational framework combines three innovations to enable efficient Bayesian inference: 
+(1) a low-rank Gaussian process approximation via strategic knot placement, reducing computational complexity from cubic to near-linear scaling; 
+(2) an adaptive Metropolis-Hastings sampler that automatically optimizes proposal distributions for spatial parameters during burn-in; and
+(3) optimized linear algebra operations using pre-computed distance matrices and Cholesky decompositions to accelerate covariance calculations. 
+Together, these advances make spatially varying coefficient models practical for large-scale environmental datasets.
 \section{Methods}
 \label{sec:methods}
 
@@ -233,17 +211,11 @@ We modeled land surface temperature (LST) using a spatially varying coefficient 
 
 \begin{align}
 \text{Temp}(s) &= \beta_0(s) + \beta_{\text{NDVI}}(s)\cdot\text{NDVI} + \beta_{\text{Emis}}(s)\cdot\text{Emissivity} + \epsilon(s) \
-\epsilon(s) &\sim \text{N}(0, \tau^2) \
+\epsilon(s) &\sim \text{N}(0, \tau^2) \newline
 \beta_r(s) &\sim \text{GP}(0, \sigma_r^2 \exp(-\phi_r^{-1}|s-s'|^2)) \quad \text{for } r \in {0, \text{NDVI}, \text{Emis}}
 \end{align}
 
-\textbf{Prior specifications:} We specified weakly informative priors\newline
-\begin{itemize}
-\item Spatial variance: $\sigma_r^2 \sim \text{Inv-Gamma}(0.001, 0.001)$  
-\item Spatial range: $\phi_r \sim \text{Uniform}(0.001, 500)$ km  
-\item Nugget effect: $\tau^2 \sim \text{Inv-Gamma}(0.001, 0.001)$
-\end{itemize}
-
+\textbf{Prior specifications:} We specified weakly informative priors. Spatial variance; $\sigma_r^2 \sim \text{Inv-Gamma}(0.001, 0.001)$.   Spatial range; $\phi_r \sim \text{Uniform}(0.001, 500)$ and  the nugget effect; $\tau^2 \sim \text{Inv-Gamma}(0.001, 0.001)$ \newline
 The computational implementation featured Knot-based Approximation. We selected 1 knot per 10 grid cells ($k=10$) using the  $\texttt{simpleknots()}$ function. Removed knots with missing data.
 \subsection{Results}
 \textbf{Convergence Diagnostics}\newline
@@ -255,7 +227,7 @@ We made trace plots after burn-in to check for convergence.
  \caption{Trace plots for the parameters in the model}
  \label{fig:traceplots}
  \end{figure}
-Some parameters display stable and well-mixed behavior, suggesting convergence, while others show trends or irregular jumps which was expected in our setting.
+Some variables display stable and well-mixed behavior, suggesting convergence, while others show trends or irregular jumps which was expected in our setting.
 
 \textbf{Interpretation of Coefficient Surfaces} \newline
 Below is a plot of the posterior means of the coefficients over space.
@@ -268,8 +240,24 @@ Below is a plot of the posterior means of the coefficients over space.
  \end{figure}
  The posterior mean NDVI coefficients show Strong negative effects (cooling) across the entire study region, with values ranging from -0.7310 to -0.7300. 
  Each unit increase in NDVI corresponds to about $0.73^\circ C$ decrease in land surface temperature across space.
- The emissivity coefficients reveal strong positive associations (mean $\beta_{Emis} \approx 330$) which implies that across space, a unit increase in emissivity increase temperature.
+ The emissivity coefficients reveal strong positive associations (mean $\beta_{emis} \approx 330$) which implies that across space, a unit increase in emissivity increase temperature.\newline
  
+ 
+ \textbf{Predctions} \newline
+ We generated predicted temperature values across the entire spatial domain using the posterior mean estimates of the spatially varying coefficients. 
+ These predictions were computed for all locations with complete predictor data, regardless of whether the actual temperature was observed. 
+ The predicted values were obtained by multiplying the mean coefficient estimates with the corresponding covariate values at each location. 
+ We then visualized both the observed and predicted temperature surfaces side by side to assess model performance and spatial prediction accuracy. 
+ 
+ 
+ \begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{../../figures/predictions.png}
+ \caption{Side by side plot of tempearture and their predicted values across space}
+ \label{fig:predicted temperature}
+ \end{figure}
+ 
+ The comparison reveals the model’s ability to capture spatial patterns in temperature, even in regions where observations were missing but predictor data were available.
  
  
 \section{Conclusion}
