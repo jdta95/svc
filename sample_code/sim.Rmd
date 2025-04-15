@@ -1,0 +1,1127 @@
+---
+title: "Untitled"
+author: "new"
+date: "4/4/2025"
+output: pdf_document
+---
+
+### Initialization
+```{r}
+library(knitr)
+library(varycoef)
+library(spBayes)
+library(ggplot2)
+library(gridExtra)
+library(Matrix)
+library(here)
+set.seed(123)
+
+calc_C_phi = function(coords, phi) {
+  n = nrow(coords)
+  dists = as.matrix(dist(coords)) ^ 2
+  C_phi = exp(-0.5 / phi * dists)
+}
+
+mcmc = 1000
+
+```
+
+### Purpose
+# The purpose of this simulation study is compare the performance between our method
+# and varycoef R package. Specfically, we will assess the bias, computational speed, average length of credible interval
+# and coverage
+
+## Setting
+# 5 replications (due to time constraint)
+# We will perform 1000 iterations of mcmc 
+# We will vary by 100 or 500 sample size
+# We will vary by number of betas (2 or 3) and priors (low or high)
+
+
+## metric
+### Bias ###
+### 1/R (\sum_{r=1} (beta hat - true beta ))  
+
+
+# How long to run in seconds
+
+#### Simulations
+```{r}
+
+set.seed(123)
+svclm_full = data.frame()
+svclm_low = data.frame()
+coef = data.frame()
+bayes = data.frame()
+for(i in 1:1000)
+{
+  lat = seq(0, 20, by = 1)
+  lon = seq(0, 20, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 0.1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  sigmasq_1 = 0.1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 0.1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 1)
+  X_2 = rnorm(n, 5, 1)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  
+  X = cbind(X_1,X_2)
+  X = cbind(1,X)
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+  full_rank = svclm(Y=Y, X=X,coords= coords,phi_lower = rep(l,3),
+                         phi_upper =rep(u,3))
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  svclm_full = rbind(svclm_full,c(mean(colMeans(full_rank$w_samples[800:1000, ,1])),mean(colMeans(full_rank$w_samples[800:1000, ,2])),mean(colMeans(full_rank$w_samples[800:1000, ,3])), time_taken ))
+  
+ knot_results = simpleknots(
+  Y = Y,
+  X = X,
+  coords = coords,
+  k = 2  
+)
+
+# Extract knot components
+Y_star = knot_results$Y_knots
+X_star = knot_results$X_knots
+knots = knot_results$knots
+
+  
+  m = nrow(knots)
+  
+  start_time <- Sys.time()
+  low_rank = svclm(Y=Y, X=X, coords = coords,Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,phi_lower = rep(l,3),
+                         phi_upper =rep(u,3))
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+   svclm_low = rbind(svclm_low,c(mean(colMeans(low_rank$w_samples[800:1000, ,1])),mean(colMeans(low_rank$w_samples[800:1000, ,2])),mean(colMeans(low_rank$w_samples[800:1000, ,3])), time_taken ))
+  
+  
+  
+  
+  control <- SVC_mle_control(
+  # initial values of optimization
+  init = rep(0.1, 2*3+1),
+  # using profile likelihood
+  profileLik = TRUE
+)
+
+# controls specific to optimization procedure, see help(optim)
+opt.control <- list(
+  # number of iterations (set to one for demonstration sake)
+  maxit = 1,
+  # tracing information
+  trace = 6
+)
+  start_time <- Sys.time()
+  fit <- SVC_mle(y = Y, X = X,locs = coords,control = control,
+               optim.control = opt.control)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+ coef = rbind(coef,c(fit$coefficients[1],fit$coefficients[2],fit$coefficients[3],time_taken)) 
+  
+  start_time <- Sys.time()
+  svc_fit <- spSVC(
+  y ~ x1 + x2,
+  coords = coords,
+  data = data.frame(y = Y, x1 = X_1, x2 = X_2),
+  starting = list(
+    "phi" = rep(3, 3),
+    "sigma.sq" = rep(1, 3),
+    "tau.sq" = 0.01
+  ),
+  tuning = list(
+    "phi" = rep(0.1, 3),
+    "sigma.sq" = rep(0.1, 3),
+    "tau.sq" = 0.01
+  ),
+  priors = list(
+    "phi.Unif" = list(rep(0.1, 3), rep(10, 3)),
+    "sigma.sq.IG" = list(rep(2, 3), rep(2, 3)),
+    "tau.sq.IG" = list(2, 0.01)
+  ),
+  cov.model = "exponential",
+  n.samples = 1000, svc.cols= c(1,2,3)
+)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  svc_fit_rec <- spRecover(svc_fit, start = 800, verbose = FALSE,get.beta= TRUE,get.w= TRUE)
+  beta_samples <- svc_fit_rec$p.beta.recover.samples
+  w_posterior_samples <- as.matrix(svc_fit_rec$p.w.recover.samples)
+  w_means <- mean(colMeans(w_posterior_samples))
+  bayes = rbind(bayes,c(w_means,mean(beta_samples[,1]),mean(beta_samples[,2]),time_taken))
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r,warning=FALSE}
+### Scenario 1: (2 betas and "low" priors)
+### 100 Sample size
+gibbs1 = data.frame()
+coef1 = data.frame()
+for (i in 1:1000) {
+  
+  lat = seq(0, 9, by = 1)
+  lon = seq(0, 9, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2, w, beta_1, beta_2, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  start_time <- Sys.time()
+    output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs1 = rbind(gibbs1,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+  fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef1 = rbind(coef1,c(fit$coefficients[2]-3,fit$coefficients[3]+5,time_taken))
+  }
+
+
+gibbs2 = data.frame()
+coef2 = data.frame()
+### 361 Sample size
+for (i in 1:5) {
+  lat = seq(0, 9, by = .4)
+  lon = seq(0, 9, by = .4)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 1
+  phi_w = 2
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 1
+  phi_1 = 2
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 1
+  phi_2 = 2
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2, w, beta_1, beta_2, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs2 = rbind(gibbs2,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef2 = rbind(coef2,c(fit$coefficients[2]-3,fit$coefficients[3]+5,time_taken))
+}
+```
+
+
+
+
+
+
+```{r,warning=FALSE}
+gibbs3 = data.frame()
+coef3 = data.frame()
+### Scenario 2: (2 betas and "high" priors)
+### 100 Sample size
+for (i in 1:5) {
+  
+  lat = seq(0, 9, by = 1)
+  lon = seq(0, 9, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 4
+  phi_w = 8
+   
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 4
+  phi_1 = 8
+   
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 4
+  phi_2 = 8
+   
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  
+  # generating epsilon
+  tausq = 0.01
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2, w, beta_1, beta_2, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+ output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs3 = rbind(gibbs3,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef3 = rbind(coef3,c(fit$coefficients[2]-3,fit$coefficients[3]+5,time_taken))
+}
+
+gibbs4 = data.frame()
+coef4 = data.frame()
+### 361 Sample size
+for (i in 1:5) {
+  lat = seq(0, 9, by = .4)
+  lon = seq(0, 9, by = .4)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 4
+  phi_w = 8
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 4
+  phi_1 = 8
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 4
+  phi_2 = 8
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  
+  # generating epsilon
+  tausq = 0.01
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2, w, beta_1, beta_2, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs4 = rbind(gibbs4,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef4 = rbind(coef4,c(fit$coefficients[2]-3,fit$coefficients[3]+5,time_taken))
+}
+
+```
+
+
+
+
+
+```{r,warning=FALSE}
+gibbs5 = data.frame()
+coef5 = data.frame()
+### Scenario 3: (3 betas and "low" priors)
+### 100 Sample size
+for (i in 1:5) {
+  
+  lat = seq(0, 9, by = 1)
+  lon = seq(0, 9, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 3
+  
+  # generating w
+  sigmasq_w = 1
+  phi_w = 2
+   
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 1
+  phi_1 = 2
+   
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 1
+  phi_2 = 2
+   
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  sigmasq_3 = 1
+  phi_3 = 2
+   
+  C_3 = calc_C_phi(coords, phi_3)
+  beta_3_mean = -10
+  beta_3 = MASS::mvrnorm(1, rep(beta_3_mean, n), sigmasq_3 * C_3)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  X_3 = rnorm(n, 100, 1000)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2+ X_3 * beta_3 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2,X_3, w, beta_1, beta_2, beta_3, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2","X_3")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2","X_3")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs5 = rbind(gibbs5,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5),mean(colMeans(output$beta_samples[800:1000, ,3]) +10), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef5 = rbind(coef5,c(fit$coefficients[2]-3,fit$coefficients[3]+5,fit$coefficients[4]+10,time_taken))
+}
+
+gibbs6 = data.frame()
+coef6 = data.frame()
+### 361 Sample size
+for (i in 1:5) {
+  lat = seq(0, 9, by = .4)
+  lon = seq(0, 9, by = .4)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 3
+  
+  # generating w
+  sigmasq_w = 1
+  phi_w = 2
+   
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 1
+  phi_1 = 2
+   
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 1
+  phi_2 = 2
+   
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  sigmasq_3 = 1
+  phi_3 = 2
+   
+  C_3 = calc_C_phi(coords, phi_3)
+  beta_3_mean = -10
+  beta_3 = MASS::mvrnorm(1, rep(beta_3_mean, n), sigmasq_3 * C_3)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  X_3 = rnorm(n, 100, 1000)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2+ X_3 * beta_3 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2,X_3, w, beta_1, beta_2, beta_3, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2","X_3")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2","X_3")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs6 = rbind(gibbs6,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5),mean(colMeans(output$beta_samples[800:1000, ,3]) +10), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef6 = rbind(coef6,c(fit$coefficients[2]-3,fit$coefficients[3]+5,fit$coefficients[4]+10,time_taken))
+}
+```
+
+
+
+```{r,warning=FALSE}
+gibbs7 = data.frame()
+coef7 = data.frame()
+### Scenario 4: (3 betas and "high" priors)
+### 100 Sample size
+for (i in 1:5) {
+  
+  lat = seq(0, 9, by = 1)
+  lon = seq(0, 9, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 3
+  
+  # generating w
+  sigmasq_w = 4
+  phi_w = 8
+   
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 4
+  phi_1 = 8
+   
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 4
+  phi_2 = 8
+   
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  sigmasq_3 = 4
+  phi_3 = 8
+   
+  C_3 = calc_C_phi(coords, phi_3)
+  beta_3_mean = -10
+  beta_3 = MASS::mvrnorm(1, rep(beta_3_mean, n), sigmasq_3 * C_3)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  X_3 = rnorm(n, 100, 1000)
+  
+  # generating epsilon
+  tausq = 0.01
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2+ X_3 * beta_3 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2,X_3, w, beta_1, beta_2, beta_3, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2","X_3")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2","X_3")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+  output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs7 = rbind(gibbs7,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5),mean(colMeans(output$beta_samples[800:1000, ,3]) +10), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef7 = rbind(coef7,c(fit$coefficients[2]-3,fit$coefficients[3]+5,fit$coefficients[4]+10,time_taken))
+}
+
+gibbs8 = data.frame()
+coef8 = data.frame()
+### 361 Sample size
+for (i in 1:5) {
+  lat = seq(0, 9, by = .4)
+  lon = seq(0, 9, by = .4)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 3
+  
+  # generating w
+  sigmasq_w = 4
+  phi_w = 8
+   
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  # generating beta's
+  sigmasq_1 = 4
+  phi_1 = 8
+   
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n), sigmasq_1 * C_1)
+  
+  sigmasq_2 = 4
+  phi_2 = 8
+   
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n), sigmasq_2 * C_2)
+  
+  sigmasq_3 = 4
+  phi_3 = 8
+   
+  C_3 = calc_C_phi(coords, phi_3)
+  beta_3_mean = -10
+  beta_3 = MASS::mvrnorm(1, rep(beta_3_mean, n), sigmasq_3 * C_3)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 10)
+  X_2 = rnorm(n, 10, 100)
+  X_3 = rnorm(n, 100, 1000)
+  
+  # generating epsilon
+  tausq = 0.01
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2+ X_3 * beta_3 + w + epsilon
+  
+  k = 2
+  
+  lat_knots = unique(lat)
+  lat_knots = lat_knots[seq(1, length(lat_knots), by = k)]
+  
+  lon_knots = unique(lon)
+  lon_knots = lon_knots[seq(1, length(lon_knots), by = k)]
+  
+  knots = as.matrix(expand.grid(lat_knots, lon_knots))
+  
+  df = data.frame(coords, Y, X_1, X_2,X_3, w, beta_1, beta_2, beta_3, epsilon)
+  
+  knots_df = data.frame(knots)
+  colnames(knots_df) = c("lat", "lon")
+  
+  knots_df = merge(knots_df, df, by = c("lat", "lon"), all.x = TRUE, all.y = FALSE)
+  
+  X = as.matrix(df[, c("X_1", "X_2","X_3")])
+  Y_star = knots_df$Y
+  X_star = as.matrix(knots_df[, c("X_1", "X_2","X_3")])
+  
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+output = svc::svclm_beta(Y = Y,
+                         X = X,
+                         s = coords,
+                         Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,
+                         beta_knots_start = matrix(0, nrow = m, ncol = p),
+                         phi_beta_start = rep(l + (u - l) / 2, p),
+                         sigmasq_beta_start = rep(1, p),
+                         tausq_start = 1,
+                         phi_beta_proposal_sd = rep(0.5, p),
+                         phi_beta_lower = rep(l, p),
+                         phi_beta_upper = rep(u, p),
+                         mcmc = mcmc)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  gibbs8 = rbind(gibbs8,c(mean(colMeans(output$beta_samples[800:1000, ,1]) -3),mean(colMeans(output$beta_samples[800:1000, ,2]) +5),mean(colMeans(output$beta_samples[800:1000, ,3]) +10), time_taken ))
+  X = cbind(1,X)
+  start_time <- Sys.time()
+ fit <- SVC_mle(y = Y, X = X,locs = coords)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  coef8 = rbind(coef8,c(fit$coefficients[2]-3,fit$coefficients[3]+5,fit$coefficients[4]+10,time_taken))
+}
+
+```
+
+
+```{r}
+combined_table <- rbind(colMeans(gibbs1), colMeans(coef1))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 1: (2 betas and low priors) - 100 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias", "Time to compute on average"))
+```
+```{r}
+combined_table <- rbind(colMeans(gibbs2), colMeans(coef2))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 2: (2 betas and low priors) - 500 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias", "Time to compute on average"))
+```
+
+
+```{r}
+combined_table <- rbind(colMeans(gibbs3), colMeans(coef3))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 3: (2 betas and high priors) - 100 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias", "Time to compute on average"))
+```
+
+
+```{r}
+combined_table <- rbind(colMeans(gibbs4), colMeans(coef4))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 4: (2 betas and high priors) - 100 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias", "Time to compute on average"))
+```
+
+```{r}
+combined_table <- rbind(colMeans(gibbs5), colMeans(coef5))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 5: (3 betas and high priors) - 100 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias","Beta 3 - Bias", "Time to compute on average"))
+```
+
+
+```{r}
+combined_table <- rbind(colMeans(gibbs6), colMeans(coef6))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 6: (3 betas and low priors) - 500 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias","Beta 3 - Bias", "Time to compute on average"))
+```
+
+```{r}
+combined_table <- rbind(colMeans(gibbs7), colMeans(coef7))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 7: (3 betas and high priors) - 100 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias","Beta 3 - Bias", "Time to compute on average"))
+```
+
+```{r}
+combined_table <- rbind(colMeans(gibbs8), colMeans(coef8))
+
+rownames(combined_table) <- c("Gibbs Sampler", "varycoef")
+kable(combined_table, caption = "Scenario 8: (3 betas and high priors) - 500 sample size",col.names = c(" Beta 1 - Bias","Beta 2 - Bias","Beta 3 - Bias", "Time to compute on average"))
+```
+
+
+
+
+
+
+### Interpretations of results
+1. Our model (Gibbs sampler) has high bias compared to varycoef
+2. Our model (Gibbs sampler) is quick to compute compared to varycoef
+
+### Next steps
+Improve the model Gibbs sampler for better performance (bias)
+Add another metric (EES/sec) to compare between two methods
