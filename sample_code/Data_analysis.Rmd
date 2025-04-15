@@ -157,7 +157,7 @@ knot_results = simpleknots(
   Y = Y,
   X = X,
   coords = coords,
-  k = 30 
+  k = 31
 )
 
 # Extract knot components
