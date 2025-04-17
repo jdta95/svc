@@ -143,7 +143,7 @@ To achieve the purposes of the simulation study, we used the following metrics t
 
 \subsubsection{Spatial Priors}
 
-The spatial random effect \( w \), and regression coefficients \( \beta_1 \) and \( \beta_2 \), are modeled as Gaussian processes with constant mean vectors and spatial covariance matrices. These are defined using exponential covariance functions. Table~\ref{tab:priors} summarizes the prior distributions used.
+The spatial random effect $ w $, and regression coefficients $ \beta_1 $ and $ \beta_2 $, are modeled as Gaussian processes with constant mean vectors and spatial covariance matrices. These are defined using exponential covariance functions. Table~\ref{tab:priors} summarizes the prior distributions used.
 
 \begin{table}[h!]
 \centering
@@ -151,16 +151,16 @@ The spatial random effect \( w \), and regression coefficients \( \beta_1 \) and
 \label{tab:priors}
 \begin{tabular}{|c|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Variance (\( \sigma^2 \))} & \textbf{Range (\( \phi \))} & \textbf{Distribution} \\
+\textbf{Parameter} & \textbf{Variance ($ \sigma^2 $)} & \textbf{Range ($ \phi $)} & \textbf{Distribution} \\
 \hline
-\( w \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_w \cdot \Phi_w(s, s')) \) \\
-\( \beta_1 \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_{\beta_1} \cdot \Phi_{\beta_1}(s, s')) \) \\
-\( \beta_2 \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_{\beta_2} \cdot \Phi_{\beta_2}(s, s')) \) \\
+$ w $ & 0.1 & 2 & $ \mathcal{N}(1_n, \sigma^2_w \cdot \Phi_w(s, s')) $ \\
+$ \beta_1 $ & 0.1 & 2 & $ \mathcal{N}(1_n, \sigma^2_{\beta_1} \cdot \Phi_{\beta_1}(s, s')) $ \\
+$ \beta_2 $ & 0.1 & 2 & $ \mathcal{N}(1_n, \sigma^2_{\beta_2} \cdot \Phi_{\beta_2}(s, s')) $ \\
 \hline
 \end{tabular}
 \end{table}
 
-Here, \( \Phi(s, s') \) denotes a spatial covariance function (e.g., exponential or Matérn), and \( 1_n \) is a vector of ones of length \( n \).
+Here, $ \Phi(s, s') $ denotes a spatial covariance function (e.g., exponential or Matérn), and $ 1_n $ is a vector of ones of length $ n $.
 
 \subsubsection{Covariate and Response Generation}
 
@@ -174,10 +174,10 @@ The covariates and response variable are generated using the distributions and f
 \hline
 \textbf{Variable} & \textbf{Distribution / Formula} \\
 \hline
-\( X_1 \) & \( \mathcal{N}(0, 1) \) \\
-\( X_2 \) & \( \mathcal{N}(5, 1) \) \\
-\( \epsilon \) & \( \mathcal{N}(0, \sigma^2_\epsilon) \), with \( \sigma^2_\epsilon = 0.1 \) \\
-\( Y \) & \( \beta_1 X_1 + \beta_2 X_2 + w + \epsilon \) \\
+$ X_1 $ & $ \mathcal{N}(0, 1) $ \\
+$ X_2 $ & $ \mathcal{N}(5, 1) $ \\
+$ \epsilon $ & $ \mathcal{N}(0, \sigma^2_\epsilon) $, with $ \sigma^2_\epsilon = 0.1 $ \\
+$ Y $ & $ \beta_1 X_1 + \beta_2 X_2 + w + \epsilon $ \\
 \hline
 \end{tabular}
 \end{table}
@@ -194,9 +194,9 @@ To assess the performance of our estimation procedures and reduce sampling varia
 \hline
 \textbf{Setting} & \textbf{Value / Description} \\
 \hline
-Spatial grid size & \( 21 \times 21 = 441 \) locations \\
+Spatial grid size & $ 21 \times 21 = 441 $ locations \\
 Number of replications & 1000 \\
-Error variance \( \sigma^2_\epsilon \) & 0.1 \\
+Error variance $ \sigma^2_\epsilon $ & 0.1 \\
 Covariance function & Exponential kernel \\
 \hline
 \end{tabular}
@@ -204,7 +204,7 @@ Covariance function & Exponential kernel \\
 
 \subsection{Comparisons with Other Packages}
 
-We compare the performance of our proposed method with \texttt{varycoef} and \texttt{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for \( \beta_1 \), \( \beta_2 \), and \( w \) are all set to 1.
+We compare the performance of our proposed method with \texttt{varycoef} and \texttt{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for $ \beta_1 $, $ \beta_2 $, and $ w $ are all set to 1.
 
 \begin{table}[h!]
 \centering
@@ -213,9 +213,9 @@ We compare the performance of our proposed method with \texttt{varycoef} and \te
 \begin{tabular}{|l|ccc|ccc|ccc|}
 \hline
 \textbf{Method} 
-& \multicolumn{3}{c|}{\( \beta_1 \)} 
-& \multicolumn{3}{c|}{\( \beta_2 \)} 
-& \multicolumn{3}{c|}{\( w \)} \\
+& \multicolumn{3}{c|}{ $ \beta_1 $ } 
+& \multicolumn{3}{c|}{ $ \beta_2 $ } 
+& \multicolumn{3}{c|}{ $ w $ } \\
 \cline{2-10}
 & Bias & RMSE & Time 
 & Bias & RMSE & Time 
