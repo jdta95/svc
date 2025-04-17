@@ -141,42 +141,101 @@ To achieve the purposes of the simulation study, we used the following metrics t
     \item Computational cost (seconds).
 \end{itemize}
 
-\subsection{Data generating mechanisms}
-We first generate a grid consisting of 21 evenly spaced longitudes and 21 evenly spaced latitudes for our coefficients to vary on.
+\subsubsection{Spatial Priors}
 
-Then, we focus on generating spatial random effects $w$, two regression coefficients $\beta_1, \beta_2$, and error term $\epsilon$.
+The spatial random effect \( w \), and regression coefficients \( \beta_1 \) and \( \beta_2 \), are modeled as Gaussian processes with constant mean vectors and spatial covariance matrices. These are defined using exponential covariance functions. Table~\ref{tab:priors} summarizes the prior distributions used.
 
-Priors of $w$:
-\begin{itemize}
-    \item $\sigma^2_w = 0.1$ 
-    \item $\phi_w =2$
-    \item $w\sim N(1_n, \sigma^2_w\times\phi_w(s))$
-\end{itemize}
+\begin{table}[h!]
+\centering
+\caption{Priors for spatial random effects and regression coefficients.}
+\label{tab:priors}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Parameter} & \textbf{Variance (\( \sigma^2 \))} & \textbf{Range (\( \phi \))} & \textbf{Distribution} \\
+\hline
+\( w \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_w \cdot \Phi_w(s, s')) \) \\
+\( \beta_1 \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_{\beta_1} \cdot \Phi_{\beta_1}(s, s')) \) \\
+\( \beta_2 \) & 0.1 & 2 & \( \mathcal{N}(1_n, \sigma^2_{\beta_2} \cdot \Phi_{\beta_2}(s, s')) \) \\
+\hline
+\end{tabular}
+\end{table}
 
-Priors of $\beta_1$:
-\begin{itemize}
-    \item $\sigma^2_{\beta_1} = 0.1$ 
-    \item $\phi_{\beta_1} =2$
-    \item ${\beta_1}\sim N(1_n, \sigma^2_{\beta_1}\times\phi_{\beta_1}(s))$
-\end{itemize}
+Here, \( \Phi(s, s') \) denotes a spatial covariance function (e.g., exponential or Matérn), and \( 1_n \) is a vector of ones of length \( n \).
 
-Priors of $\beta_2$:
-\begin{itemize}
-    \item $\sigma^2_{\beta_2} = 0.1$ 
-    \item $\phi_{\beta_2} =2$
-    \item ${\beta_2}\sim N(1_n, \sigma^2_{\beta_2}\times\phi_{\beta_2}(s))$
-\end{itemize}
+\subsubsection{Covariate and Response Generation}
 
-Finally, we generate $X$ and $Y$.
+The covariates and response variable are generated using the distributions and formulae shown in Table~\ref{tab:data-gen}.
 
-\begin{itemize}
-    \item $X_1 \sim N(0,1)$
-    \item $X_2 \sim N(5,1)$
-    \item $Y = \beta_1 \times X_1 + \beta_2 \times X_2 + w + \epsilon$.
-\end{itemize}
+\begin{table}[h!]
+\centering
+\caption{Covariate and response generation.}
+\label{tab:data-gen}
+\begin{tabular}{|c|l|}
+\hline
+\textbf{Variable} & \textbf{Distribution / Formula} \\
+\hline
+\( X_1 \) & \( \mathcal{N}(0, 1) \) \\
+\( X_2 \) & \( \mathcal{N}(5, 1) \) \\
+\( \epsilon \) & \( \mathcal{N}(0, \sigma^2_\epsilon) \), with \( \sigma^2_\epsilon = 0.1 \) \\
+\( Y \) & \( \beta_1 X_1 + \beta_2 X_2 + w + \epsilon \) \\
+\hline
+\end{tabular}
+\end{table}
 
-\subsection{Global settings and output}
-We will replicate the comparison for 1000 times to establish precession and reduce the variance in sampling draw.
+\subsection{Global Settings and Simulation Replication}
+
+To assess the performance of our estimation procedures and reduce sampling variability, the entire data generation and model fitting pipeline is replicated 1000 times. Table~\ref{tab:settings} summarizes the global settings used throughout the simulations.
+
+\begin{table}[h!]
+\centering
+\caption{Global simulation settings.}
+\label{tab:settings}
+\begin{tabular}{|c|l|}
+\hline
+\textbf{Setting} & \textbf{Value / Description} \\
+\hline
+Spatial grid size & \( 21 \times 21 = 441 \) locations \\
+Number of replications & 1000 \\
+Error variance \( \sigma^2_\epsilon \) & 0.1 \\
+Covariance function & Exponential kernel \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Comparisons with Other Packages}
+
+We compare the performance of our proposed method with \texttt{varycoef} and \texttt{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for \( \beta_1 \), \( \beta_2 \), and \( w \) are all set to 1.
+
+\begin{table}[h!]
+\centering
+\caption{Comparison of methods based on bias, RMSE, and computation time (seconds). Placeholder values shown.}
+\label{tab:method-compact}
+\begin{tabular}{|l|ccc|ccc|ccc|}
+\hline
+\textbf{Method} 
+& \multicolumn{3}{c|}{\( \beta_1 \)} 
+& \multicolumn{3}{c|}{\( \beta_2 \)} 
+& \multicolumn{3}{c|}{\( w \)} \\
+\cline{2-10}
+& Bias & RMSE & Time 
+& Bias & RMSE & Time 
+& Bias & RMSE & Time \\
+\hline
+Proposed Method 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 \\
+\texttt{varycoef} 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 \\
+\texttt{spBayes} 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 
+& 0.000 & 0.000 & 0.0 \\
+\hline
+\end{tabular}
+\end{table}
 
 \section{Data Analysis}
 \label{sec:data analysis}
