@@ -221,10 +221,10 @@ We compare the performance of our proposed method with \texttt{varycoef} and \te
 & Bias & RMSE & Time 
 & Bias & RMSE & Time \\
 \hline
-Proposed Method 
-& 0.000 & 0.000 & 0.0 
-& 0.000 & 0.000 & 0.0 
-& 0.000 & 0.000 & 0.0 \\
+SVCLM (low rank)
+& -4.36 & 9.72 & 60.5
+& -3.34 & 3.68 & 60.5 
+& 1.15 & 2.11 & 60.5 \\
 \texttt{varycoef} 
 & 0.000 & 0.000 & 0.0 
 & 0.000 & 0.000 & 0.0 
@@ -236,6 +236,27 @@ Proposed Method
 \hline
 \end{tabular}
 \end{table}
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{../../figures/plot_A_SVCLM_LOW.png.png}
+ \caption{Posterior Mapping for W - SVCLM low rank}
+ \label{fig:SVCLMA}
+ \end{figure}
+
+ \begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{../../figures/plot_B_SVCLM_LOW.png.png}
+ \caption{Posterior Mapping for beta 1 - SVCLM low rank}
+ \label{fig:SVCLMAB}
+ \end{figure}
+
+ \begin{figure}[h]
+ \centering
+ \includegraphics[width=\textwidth]{../../figures/plot_C_SVCLM_LOW.png.png}
+ \caption{Posterior Mapping for beta 2 - SVCLM low rank}
+ \label{fig:SVCLMAC}
+ \end{figure}
 
 \section{Data Analysis}
 \label{sec:data analysis}
