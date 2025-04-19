@@ -86,8 +86,6 @@ We refer to $C(\cdot)$ as the covariance function, because the covariance of $w_
     \btheta_r &= (\sigma_r^2, \phi_r),\\
     C(\btheta_r) &= \sigma_r^2 K(\phi_r), \text{ and}\\
     K(\phi_r) &= \left[ K(s_i, s_{i'}; \phi_r) \right]_{i, i' = 1}^n = \left[\exp\{\phi_r^{-1}\|s_i-s_{i'}\|^2\}\right]_{i, i' = 1}^n,
-    % C(s_i, s_{i'}; \btheta_r) &= \sigma_r^2 K(s_i, s_{i'}; \phi_r), \text{ and}\\
-    % K(s_i, s_{i'}; \phi_r) &= \exp\{\phi_r^{-1}\|s_i-s_{i'}\|^2\},
 \end{align*}
 due to its useful properties such as infinite smoothness and gradual decrease in covariance with distance. The parameter $\sigma_r^2$ is the spatial variance and $\phi_r$ is the spatial decay, which indicates how quickly correlation decreases with the squared distance.
 
@@ -101,7 +99,7 @@ We assign inverse-gamma conjugate priors for the variance parameters $\tau^2$ an
 \subsection{MCMC Algorithm}
 \label{sec:mcmc}
 
-The primary function in the svc package, svclm, samples from the joint posterior distribution of $w_r(\bs), \phi_r, \sigma_r^2,$ and $\tau^2$, for $r = 1, \dots, p$ using a Gibbs sampler. We will explain how each parameter is sampled at iteration $t+1$.
+The primary function in the \pkg{svc} package, \code{svclm}, samples from the joint posterior distribution of $w_r(\bs), \phi_r, \sigma_r^2,$ and $\tau^2$, for $r = 1, \dots, p$ using a Gibbs sampler. We will explain how each parameter is sampled at iteration $t+1$.
 
 \subsubsection{Spatial Decay}
 \label{sec:spatial_decay}
@@ -112,7 +110,7 @@ The parameter $\phi_r^{(t+1)}$ is updated via a random walk Metropolis algorithm
 \end{align*}
 where $U$ is sampled from a normal distribution with mean $0$.
 
-The initial standard deviation for $U$ is specified using the "phi\_proposal\_sd\_start" argument or is $1$ by default. Then the standard deviation is updated at each iteration via a Robust Adaptive Metropolis (RAM) algorithm (Vihola 2012).
+The initial standard deviation for $U$ is specified using the "phi\_proposal\_sd\_start" argument or is $1$ by default. Then the standard deviation is updated at each iteration via a Robust Adaptive Metropolis (RAM) algorithm as described by \cite{vihola}.
 
 \subsubsection{Spatially Varying Coefficients}
 \label{sec:svcs}
@@ -121,7 +119,7 @@ Let $\Ytilde(\bs) = Y(\bs) - \sum_{j\neq r} X_j(\bs)w_j^{(t)}(\bs)$. Then
 \begin{align*}
     \frac{\Ytilde}{X_r}(\bs) | w_r^{(t)}(\bs), \tau^2 \sim \text{MVN} \left(w_r^{(t)}(\bs), \tau^{2(t)} \text{diag}\left( \frac{1}{X_r^2(\bs)} \right)\right) := \text{MVN} \left(\mu, \Sigma\right).
 \end{align*}
-Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, C\left(\btheta_r^{(t)}\right)\right) := \text{MVN}\left(0, \Sigma_0\right)$, we sample $w_r^{(t+1)}(\bs)$ from MVN$(\mu_1, \Sigma_1)$, where
+Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, C(\btheta_r^{(t)})\right) := \text{MVN}\left(0, \Sigma_0\right)$, we sample $w_r^{(t+1)}(\bs)$ from MVN$(\mu_1, \Sigma_1)$, where
 \begin{align*}
     \Sigma_1 &= \left(\Sigma_0^{-1} + \Sigma^{-1}\right) \text{ and }
     \mu_1 = \Sigma_1 \Sigma^{-1} \frac{\Ytilde}{X_r}(s).
@@ -130,7 +128,7 @@ Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, C\left(\btheta_r^{(t)}
 \subsubsection{Spatial Variance}
 \label{sec:spatial_variance}
 
-We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta_r + w_r^{(t)}(\bs)^{\top} K\left(\phi_r^{(t)}\right)^{-1} w_r^{(t)}(\bs)\right)$.
+We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta_r + w_r^{(t)}(\bs)^{\top} K(\phi_r^{(t)})^{-1} w_r^{(t)}(\bs)\right)$.
 
 \subsubsection{Nugget}
 \label{sec:nugget}
@@ -140,21 +138,30 @@ We sample $\tau^{2(t+1)}$ from Inv.Gamma$\left(\alpha_t + \frac{n}{2}, \beta_t +
 \subsubsection{Low-Rank Gaussian Process}
 \label{sec:low_rank}
 
-We can perform the above algorithm using the complete data for all $n$ locations to estimate the full-rank Gaussian processes. However, notice that in each iteration, we must invert $C\left(\btheta_r^{(t)}\right)$ for $r = 1, \dots, p$. In order to do so, we perform a Cholesky decomposition to obtain an upper triangular matrix $R$ and then invert $R$. These Cholesky decompositions on $p$ symmetric positive definite matrices of size $(n \times n)$ are the most flop-expensive operations in the algorithm resulting in an overall cost of $O(pn^3)$ per iteration. We can dramatically improve the efficiency of this algorithm with a low-rank Guassian process.
+We can perform the above algorithm using the complete data for all $n$ locations to estimate the full-rank Gaussian process model. However, notice that in each iteration, we must invert $C(\btheta_r^{(t)})$ for $r = 1, \dots, p$. In order to do so, we perform a Cholesky decomposition to obtain an upper triangular matrix $R$ and then invert $R$. These Cholesky decompositions on $p$ symmetric positive definite matrices of size $(n \times n)$ are the most flop-expensive operations in the algorithm resulting in an overall cost of $O(pn^3)$ per iteration. We can dramatically improve the efficiency of this algorithm with a low-rank Guassian process as described by \cite{banerjee}.
 
 Consider a set of knots $\bs^* = (s_1^*, \dots, s_m^*)^\top$ which are a subset of locations $\bs$. With the low-rank Guassian process, we can still sample $\tau^2$, $\phi_r$, and $\sigma_r^2$ for each $r = 1, \dots, p$ because they were assumed to be constant within the spatial domain $\mathcal{D}$. We also sample $\bw_r^* = \left[w(\bs_i^*)\right]_{i=1}^m$ which follows a multivariate Gaussian distribution with covariance matrix $C^*(\btheta_r) = \sigma_r^2 K^*(\phi_r) = \left[ \sigma_r^2 \exp\{ \phi_r^{-1} \| s_{i}^* - s_{i}^* \|^2 \} \right]_{i, i' = 1}^m$.
 
 Then for the original set of locations $\bs$, we predict the spatial interpolants 
 \begin{align*}
     \wtilde_r(\bs) &= \bbE[w_r(\bs)|\bw_r^*] = \bc (\bs; \btheta_r) C^{*-1}(\btheta_r)\bw_r^*,
-    % \text{ where}\\
-    % \bc^\top (\bs; \btheta_r) &= \sigma_r^2 \left[ K(s_{i}, s_j^*; \phi_r) \right]_{i = 1}^n
 \end{align*}
 where $\bc (\bs; \btheta_r)$ is an $n \times m$ matrix with $i, j$ element
 \begin{align*}
     c_{i, j} &= \sigma_r^2 K(s_i, s_j^*; \phi_r) = \sigma_r^2 \exp\{\phi_r^{-1}\|s_i-s_j^*\|^2\}.
 \end{align*}
 Therefore, using the low-rank Gaussian process, we can replace $w_r(\bs)$ in the original model with $\wtilde_r(\bs)$ for each $r = 1, \dots, p$, but with an overall cost per iteration of $O(pm^3)$, where $m < n$.
+
+\section{Using \pkg{svc}}
+\label{sec:using}
+
+To fit a linear regression model with spatially varying coefficients using \pkg{svc}, we use the \code{svclm} function. In most cases, we recommend providing the following arguments to \code{svclm}: \code{Y}, \code{X}, \code{coords}, \code{Y\_knots}, \code{X\_knots}, \code{knots}, \code{phi\_lower}, \code{phi\_upper}, and \code{mcmc}. \code{Y} is a vector of length $n$ containing the response variable, \code{X} is the design matrix of size $n \times p$, and \code{coords} is a matrix of size $n \times 2$ containing the spatial coordinates of each location. The arguments \code{Y\_knots}, \code{X\_knots}, and \code{knots} provide the data for the knots that will be used in the low-rank model. \code{Y\_knots} is a vector of length $m$ containing the response variable at the knots, \code{X\_knots} is a matrix of size $m \times p$ containing the covariates at the knots, and \code{knots} is a matrix of size $m \times 2$ containing the spatial coordinates of each knot. The arguments \code{phi\_lower} and \code{phi\_upper} are each a vector of length $p$ containing the lower and upper bounds for the uniform distribution priors assigned to spatial decay parameters $\phi_r$, respectively. The argument \code{mcmc} is an integer specifying the number of MCMC iterations to run.
+
+The minimum required arguments to run \code{svclm} are \code{Y}, \code{X}, \code{coords}, \code{phi\_lower}, and \code{phi\_upper}. In this case, the function will use the same data for the knots as for the full model essentially fitting the full Gaussian process model. The default number of MCMC iterations is $1000$.
+
+We will not go into detail here since the arguments above should be sufficient for most use cases, but the \code{svclm} function does allow other arguments for additional settings. Users can specify starting values for $\tau^2$, $\sigma_r^2$, $\phi_r$, and $\bw_r^*$ where $r = 1, \dots, p$. They can also set the hyperparameters for the inverse gamma priors on $\tau^2$ and $\sigma_r^2$. Lastly, users can set the starting proposal standard deviations for each $\phi_r$ and the target acceptance rate for the RAM.
+
+By default, the starting values for $\tau^2$, $\sigma_r^2$, $\phi_r$, and $\bw_r^*$ are set to $1$, $1$, the midpoint between the corresponding upper and lower bounds, and $0$ for all locations, respectively. The default priors for $\tau^2$ and each $\sigma_r^2$ are all Inv.Gamma$(0.001, 0.001)$ to achieve uninformative priors. The starting proposal standard deviations for each $\phi_r$ are set to $1$ by default, and the target acceptance rate for the RAM algorithm is set to $0.234$ which is the asymptotically optimal acceptance rate under most conditions \citep{gelman}.
 
 \section{Simulation}
 \label{sec:simulation}
@@ -375,6 +382,7 @@ Below is a plot of the posterior means of the coefficients over space.
 \section{Conclusion}
 Conclusion 
 
+\newpage
 
 \bibliographystyle{agsm}
 
