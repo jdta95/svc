@@ -87,10 +87,10 @@ epsilon_plot = ggplot(data = data.frame(coords, epsilon)) +
 # show all plots in a grid
 grid.arrange(Y_plot, w_0_plot, w_1_plot, w_2_plot, epsilon_plot, ncol = 2)
 
-# compile package
-Rcpp::compileAttributes()
-# load in library for testing
-devtools::load_all()
+# # compile package
+# Rcpp::compileAttributes()
+# # load in library for testing
+# devtools::load_all()
 
 # generate knots
 ## 1 in every k^2 point on a grid is a knot
@@ -120,7 +120,7 @@ l = 0
 u = 30
 
 # Test function
-mcmc = 5000
+mcmc = 3000
 p = ncol(X)
 
 # svclm with minimum required arguments
@@ -134,6 +134,11 @@ output_full = svc::svclm(
   mcmc = mcmc
 )
 
+save(output_full, "data/fullrank_output.RData")
+load()
+
+s = Sys.time()
+
 # svclm with recommended arguments using knot data from simpleknots()
 output_LR = svc::svclm(
   Y = Y,
@@ -146,6 +151,8 @@ output_LR = svc::svclm(
   phi_upper = rep(u, p),
   mcmc = mcmc
 )
+
+e = Sys.time()
 
 my_summary = function(x){
   return (c(

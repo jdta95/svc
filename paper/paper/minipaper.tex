@@ -28,16 +28,21 @@
     \footnotemark[\value{#1}]%
 } 
 
+\newcommand{\bbE}{\mathbb{E}}
 \newcommand{\bbR}{\mathbb{R}}
 \newcommand{\bX}{\boldsymbol{X}}
 \newcommand{\bs}{\boldsymbol{s}}
+\newcommand{\bw}{\boldsymbol{w}}
+\newcommand{\bc}{\boldsymbol{c}}
+\newcommand{\btheta}{\boldsymbol{\theta}}
+\newcommand{\wtilde}{\tilde{w}}
 \newcommand{\Ytilde}{\tilde{Y}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\mytitle}{SVC: Bayesian Models for Spatially Varying Coefficients}  
 
 \title{\bf \mytitle}
-\author{Justice Akuoko-Frimpong, Jonathan Ta \and Edward Shao}
+\author{Justice Akuoko-Frimpong, Edward Shao, Jonathan Ta}
 
 \maketitle
 
@@ -61,22 +66,30 @@ Together, these advances make spatially varying coefficient models practical for
 \subsection{SVC Model}
 \label{sec:model}
 
-Let $s_i \in \bbR^2$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
+Let $\mathcal{D} \subset \mathbb{R}^2$ denote a spatial domain of interest, $s_i \in \mathcal{D}$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
 \begin{align*}
-    Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + w_0(\bs) + \epsilon(\bs),
+    Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + \epsilon(\bs),
 \end{align*}
-where $w_r(\bs)$ are the regression coefficients corresponding to $X_r(\bs)$, $w_0(\bs)$ are spatial random effects, and $\epsilon(\bs)$ are independently and identically distributed multivariate normal (MVN) measurement errors, i.e.
+where $w_r(\bs)$ are the regression coefficients corresponding to $X_r(\bs)$ and $\epsilon(\bs)$ are independently and identically distributed multivariate normal (MVN) measurement errors, i.e.
 \begin{align*}
     \epsilon(\bs) \sim \text{MVN}(0, \tau^2 I_n).
 \end{align*}
-For convenience, we will treat $w_0(\bs)$ as the regression coefficients corresponding to $X_0(\bs) = \mathbf{1}_n$, a vector of length $n$ with every element equal to $1$.
+Note that $X_1(\bs)$ can be defined as $\mathbf{1}_n$, a vector of length $n$ with every element equal to $1$. In this case, $w_1(\bs)$ would be equivalent to a spatially-correlated random intercept.
 
 For each $w_r(\bs)$, we assign a Gaussian process (GP) prior with squared exponential covariance, i.e.
 \begin{align*}
-    w_r &\sim \text{GP}(0, C(s, s')), \text{ where}\\
-    C(s, s') &= \sigma_r^2\exp\{\phi_r^{-1}\|s-s'\|^2\}.
+    w_r &\sim \text{GP}(0, C(\btheta_r)), \text{ where}\\
+    C(\btheta_r) &= \left[C(s_i, s_{i'}; \btheta_r)\right]_{i, i' = 1}^n.
 \end{align*}
-We refer to $C(\cdot, \cdot)$ as the covariance function, which calculates the covariance between two locations $s$ and $s'$. Squared exponential covariance is a commonly used covariance function due to useful properties such as infinite smoothness and gradual decrease in covariance with distance. The parameter $\sigma_r^2$ is the spatial variance and $\phi_r$ is the spatial decay, which indicates how quickly correlation decreases with the squared distance.
+We refer to $C(\cdot)$ as the covariance function, because the covariance of $w_r(s_i)$ and $w_r(s_{i'})$ at locations $s_i$ and $s_{i'}$ is $\sigma_r^2 C(\btheta_r)_{i, i'}$. In particular, we use the squared exponential covariance function where
+\begin{align*}
+    \btheta_r &= (\sigma_r^2, \phi_r),\\
+    C(\btheta_r) &= \sigma_r^2 K(\phi_r), \text{ and}\\
+    K(\phi_r) &= \left[ K(s_i, s_{i'}; \phi_r) \right]_{i, i' = 1}^n = \left[\exp\{\phi_r^{-1}\|s_i-s_{i'}\|^2\}\right]_{i, i' = 1}^n,
+    % C(s_i, s_{i'}; \btheta_r) &= \sigma_r^2 K(s_i, s_{i'}; \phi_r), \text{ and}\\
+    % K(s_i, s_{i'}; \phi_r) &= \exp\{\phi_r^{-1}\|s_i-s_{i'}\|^2\},
+\end{align*}
+due to its useful properties such as infinite smoothness and gradual decrease in covariance with distance. The parameter $\sigma_r^2$ is the spatial variance and $\phi_r$ is the spatial decay, which indicates how quickly correlation decreases with the squared distance.
 
 We assign inverse-gamma conjugate priors for the variance parameters $\tau^2$ and each $\sigma_r^2$. In addition, each $phi_r$ is assigned a uniform prior. In summary,
 \begin{align*}
@@ -88,7 +101,7 @@ We assign inverse-gamma conjugate priors for the variance parameters $\tau^2$ an
 \subsection{MCMC Algorithm}
 \label{sec:mcmc}
 
-The primary function in the svc package, svclm, samples from the joint posterior distribution of $w_r(\bs), \phi_r, \sigma_r^2,$ and $\tau^2$, for $r = 0, \dots, p$ using a Gibbs sampler. We will explain how each parameter is sampled at iteration $t+1$.
+The primary function in the svc package, svclm, samples from the joint posterior distribution of $w_r(\bs), \phi_r, \sigma_r^2,$ and $\tau^2$, for $r = 1, \dots, p$ using a Gibbs sampler. We will explain how each parameter is sampled at iteration $t+1$.
 
 \subsubsection{Spatial Decay}
 \label{sec:spatial_decay}
@@ -108,7 +121,7 @@ Let $\Ytilde(\bs) = Y(\bs) - \sum_{j\neq r} X_j(\bs)w_j^{(t)}(\bs)$. Then
 \begin{align*}
     \frac{\Ytilde}{X_r}(\bs) | w_r^{(t)}(\bs), \tau^2 \sim \text{MVN} \left(w_r^{(t)}(\bs), \tau^{2(t)} \text{diag}\left( \frac{1}{X_r^2(\bs)} \right)\right) := \text{MVN} \left(\mu, \Sigma\right).
 \end{align*}
-Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, \sigma_r^{2(t)} C\left(\phi_r^{(t)}\right)\right) := \text{MVN}\left(0, \Sigma_0\right)$, we sample $w_r^{(t+1)}(\bs)$ from MVN$(\mu_1, \Sigma_1)$, where
+Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, C\left(\btheta_r^{(t)}\right)\right) := \text{MVN}\left(0, \Sigma_0\right)$, we sample $w_r^{(t+1)}(\bs)$ from MVN$(\mu_1, \Sigma_1)$, where
 \begin{align*}
     \Sigma_1 &= \left(\Sigma_0^{-1} + \Sigma^{-1}\right) \text{ and }
     \mu_1 = \Sigma_1 \Sigma^{-1} \frac{\Ytilde}{X_r}(s).
@@ -117,12 +130,31 @@ Then assuming the prior $w_r(\bs) \sim \text{MVN}\left(0, \sigma_r^{2(t)} C\left
 \subsubsection{Spatial Variance}
 \label{sec:spatial_variance}
 
-We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta_r + w_r^{(t)}(\bs)^{\top} C\left(\phi_r^{(t)}\right)^{-1} w_r^{(t)}(\bs)\right)$.
+We sample $\sigma_r^{2(t+1)}$ from Inv.Gamma$\left(\alpha_r + \frac{n}{2}, \beta_r + w_r^{(t)}(\bs)^{\top} K\left(\phi_r^{(t)}\right)^{-1} w_r^{(t)}(\bs)\right)$.
 
 \subsubsection{Nugget}
 \label{sec:nugget}
 
 We sample $\tau^{2(t+1)}$ from Inv.Gamma$\left(\alpha_t + \frac{n}{2}, \beta_t + \frac{1}{2} \left(Y(\bs) - \sum_{j=0}^p X_r(\bs)w_r^{(t)}(\bs) \right)\right)$.
+
+\subsubsection{Low-Rank Gaussian Process}
+\label{sec:low_rank}
+
+We can perform the above algorithm using the complete data for all $n$ locations to estimate the full-rank Gaussian processes. However, notice that in each iteration, we must invert $C\left(\btheta_r^{(t)}\right)$ for $r = 1, \dots, p$. In order to do so, we perform a Cholesky decomposition to obtain an upper triangular matrix $R$ and then invert $R$. These Cholesky decompositions on $p$ symmetric positive definite matrices of size $(n \times n)$ are the most flop-expensive operations in the algorithm resulting in an overall cost of $O(pn^3)$ per iteration. We can dramatically improve the efficiency of this algorithm with a low-rank Guassian process.
+
+Consider a set of knots $\bs^* = (s_1^*, \dots, s_m^*)^\top$ which are a subset of locations $\bs$. With the low-rank Guassian process, we can still sample $\tau^2$, $\phi_r$, and $\sigma_r^2$ for each $r = 1, \dots, p$ because they were assumed to be constant within the spatial domain $\mathcal{D}$. We also sample $\bw_r^* = \left[w(\bs_i^*)\right]_{i=1}^m$ which follows a multivariate Gaussian distribution with covariance matrix $C^*(\btheta_r) = \sigma_r^2 K^*(\phi_r) = \left[ \sigma_r^2 \exp\{ \phi_r^{-1} \| s_{i}^* - s_{i}^* \|^2 \} \right]_{i, i' = 1}^m$.
+
+Then for the original set of locations $\bs$, we predict the spatial interpolants 
+\begin{align*}
+    \wtilde_r(\bs) &= \bbE[w_r(\bs)|\bw_r^*] = \bc (\bs; \btheta_r) C^{*-1}(\btheta_r)\bw_r^*,
+    % \text{ where}\\
+    % \bc^\top (\bs; \btheta_r) &= \sigma_r^2 \left[ K(s_{i}, s_j^*; \phi_r) \right]_{i = 1}^n
+\end{align*}
+where $\bc (\bs; \btheta_r)$ is an $n \times m$ matrix with $i, j$ element
+\begin{align*}
+    c_{i, j} &= \sigma_r^2 K(s_i, s_j^*; \phi_r) = \sigma_r^2 \exp\{\phi_r^{-1}\|s_i-s_j^*\|^2\}.
+\end{align*}
+Therefore, using the low-rank Gaussian process, we can replace $w_r(\bs)$ in the original model with $\wtilde_r(\bs)$ for each $r = 1, \dots, p$, but with an overall cost per iteration of $O(pm^3)$, where $m < n$.
 
 \section{Simulation}
 \label{sec:simulation}
@@ -145,7 +177,7 @@ To achieve the purposes of the simulation study, we used the following metrics t
 
 The spatial random effect $ w $, and regression coefficients $ \beta_1 $ and $ \beta_2 $, are modeled as Gaussian processes with constant mean vectors and spatial covariance matrices. These are defined using exponential covariance functions. Table~\ref{tab:priors} summarizes the prior distributions used.
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \caption{Priors for spatial random effects and regression coefficients.}
 \label{tab:priors}
@@ -166,7 +198,7 @@ Here, $ \Phi(s, s') $ denotes a spatial covariance function (e.g., exponential o
 
 The covariates and response variable are generated using the distributions and formulae shown in Table~\ref{tab:data-gen}.
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \caption{Covariate and response generation.}
 \label{tab:data-gen}
@@ -186,7 +218,7 @@ $ Y $ & $ \beta_1 X_1 + \beta_2 X_2 + w + \epsilon $ \\
 
 To assess the performance of our estimation procedures and reduce sampling variability, the entire data generation and model fitting pipeline is replicated 1000 times. Table~\ref{tab:settings} summarizes the global settings used throughout the simulations.
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \caption{Global simulation settings.}
 \label{tab:settings}
@@ -206,7 +238,7 @@ Covariance function & Exponential kernel \\
 
 We compare the performance of our proposed method with \texttt{varycoef} and \texttt{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for $ \beta_1 $, $ \beta_2 $, and $ w $ are all set to 1.
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \caption{Comparison of methods based on bias, RMSE, and computation time (seconds). Placeholder values shown.}
 \label{tab:method-compact}
@@ -237,23 +269,23 @@ SVCLM (low rank)
 \end{tabular}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[ht]
  \centering
- \includegraphics[width=\textwidth]{../../figures/plot_A_SVCLM_LOW.png.png}
+ \includegraphics[width=\textwidth]{../../figures/plot_A_SVCLM_LOW.png}
  \caption{Posterior Mapping for W - SVCLM low rank}
  \label{fig:SVCLMA}
  \end{figure}
 
- \begin{figure}[h]
+ \begin{figure}[ht]
  \centering
- \includegraphics[width=\textwidth]{../../figures/plot_B_SVCLM_LOW.png.png}
+ \includegraphics[width=\textwidth]{../../figures/plot_B_SVCLM_LOW.png}
  \caption{Posterior Mapping for beta 1 - SVCLM low rank}
  \label{fig:SVCLMAB}
  \end{figure}
 
- \begin{figure}[h]
+ \begin{figure}[ht]
  \centering
- \includegraphics[width=\textwidth]{../../figures/plot_C_SVCLM_LOW.png.png}
+ \includegraphics[width=\textwidth]{../../figures/plot_C_SVCLM_LOW.png}
  \caption{Posterior Mapping for beta 2 - SVCLM low rank}
  \label{fig:SVCLMAC}
  \end{figure}
@@ -263,7 +295,7 @@ SVCLM (low rank)
 The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures vegetation health/greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
 Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the variables in the dataset.
 
- \begin{figure}[h]
+ \begin{figure}[ht]
  \centering
  \includegraphics[width=\textwidth]{../../figures/spatial_horizontal_stack.png}
  \caption{
@@ -276,7 +308,7 @@ Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the
  while dark blue clusters $(\epsilon \approx 0.88-0.90)$ represents urbanized areas. Notice that notice that areas with high NDVI also tend to have higher emissivity which makes sense because vegetation emits efficiently.
  Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. \newline
  We computed the empirical semivariograms for the variables in the dataset. 
- \begin{figure}[h]
+ \begin{figure}[ht]
  \centering
  \includegraphics[width=\textwidth]{../../figures/semivariograms.png}
  \caption{Empirical semivariograms for emissivity, temperature and NDVI}
@@ -301,7 +333,7 @@ The computational implementation featured Knot-based Approximation. We selected 
 \textbf{Convergence Diagnostics}\newline
 We made trace plots after burn-in to check for convergence. 
 
-\begin{figure}[h]
+\begin{figure}[ht]
  \centering
  \includegraphics[width=\textwidth]{../../figures/traceplots.png}
  \caption{Trace plots for the parameters in the model}
@@ -312,7 +344,7 @@ Some variables display stable and well-mixed behavior, suggesting convergence, w
 \textbf{Interpretation of Coefficient Surfaces} \newline
 Below is a plot of the posterior means of the coefficients over space.
 
-\begin{figure}[h]
+\begin{figure}[ht]
  \centering
  \includegraphics[width=\textwidth]{../../figures/model_means.png}
  \caption{Spatially varying coefficient surfaces for (A) NDVI and (B) Emissivity effects on land surface temperature}
@@ -330,7 +362,7 @@ Below is a plot of the posterior means of the coefficients over space.
  We then visualized both the observed and predicted temperature surfaces side by side to assess model performance and spatial prediction accuracy. 
  
  
- \begin{figure}[h]
+ \begin{figure}[ht]
  \centering
  \includegraphics[width=\textwidth]{../../figures/predictions.png}
  \caption{Side by side plot of tempearture and their predicted values across space}
