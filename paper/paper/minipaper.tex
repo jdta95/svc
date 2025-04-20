@@ -291,7 +291,14 @@ Below is a plot of the posterior means of the coefficients over space.
  
  
 \section{Conclusion}
-Conclusion 
+\label{sec:Conclusion}
+The \pkg{svc} package provides a flexible and efficient framework for fitting SVC models that capture heterogeneous spatial processes. By leveraging low-rank Gaussian process approximations, RAM adaptation, and various sampling optimizations, we have made SVC models more computationally feasible for large-scale spatial datasets.
+
+Compared to \pkg{spBayes}, our method performs................................
+
+One limitation of our method is that it requires complete data at knot locations, whereas \pkg{spBayes} does not require any data at selected knot locations.
+
+Further improvements to the package could include allowing for different covariance functions and implementing parallelization for sampling $\phi_r$ and $\sigma_r^2$ for $r = 1, \dots, p$ since the sampling can be done independently for each $r$.
 
 \newpage
 
