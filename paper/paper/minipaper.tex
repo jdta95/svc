@@ -39,7 +39,7 @@
 \newcommand{\Ytilde}{\tilde{Y}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand{\mytitle}{\pkg{svc}: Spatially Varying Coefficient Models}  
+\newcommand{\mytitle}{\pkg{svc}: Spatially Varying Coefficient Models in R}  
 
 \title{\bf \mytitle}
 \author{Justice Akuoko-Frimpong, Edward Shao, Jonathan Ta}
@@ -64,18 +64,13 @@ Together, these advances SVC models practical for large-scale environmental data
 \label{sec:methods}
 \subsection{SVC Model}
 \label{sec:model}
-Let $\mathcal{D} \subset \mathbb{R}^2$ denote a spatial domain of interest, $s_i \in \mathcal{D}$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear SVC regression model assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
+Let $\mathcal{D} \subset \mathbb{R}^2$ denote a spatial domain, $s_i \in \mathcal{D}$ for each $i = 1, \dots, n$ denote a spatial location with collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear SVC regression model assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
 \begin{align*}
     Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + \epsilon(\bs),
 \end{align*}
-where $w_r(\bs)$ are the regression coefficients corresponding to $X_r(\bs)$ and $\epsilon(\bs)$ are independently and identically distributed multivariate normal (MVN) measurement errors, i.e. $\epsilon(\bs) \sim \text{MVN}(0, \tau^2 I_n)$. Note that $X_1(\bs)$ can be defined as $\mathbf{1}_n$, a vector of length $n$ with every element equal to $1$. In this case, $w_1(\bs)$ would be equivalent to a spatially-correlated random intercept.
+where $w_r(\bs)$ are the SVC's corresponding to $X_r(\bs)$ and $\epsilon(\bs)$ are independently and identically distributed multivariate normal measurement errors, i.e. $\epsilon(\bs) \sim \text{MVN}(0, \tau^2 I_n)$. Note that spatially-varying intercept can be included by defining $X_1(\bs)$ as $\mathbf{1}_n$, a vector of length $n$ with every element equal to $1$.
 
-For each $w_r(\bs)$, we assign a Gaussian process (GP) prior with squared exponential covariance, i.e.
-\begin{align*}
-    w_r &\sim \text{GP}(0, C(\btheta_r)), \text{ where}\\
-    C(\btheta_r) &= \left[C(s_i, s_{i'}; \btheta_r)\right]_{i, i' = 1}^n.
-\end{align*}
-We refer to $C(\cdot)$ as the covariance function, because the covariance of $w_r(s_i)$ and $w_r(s_{i'})$ at locations $s_i$ and $s_{i'}$ is $\sigma_r^2 C(\btheta_r)_{i, i'}$. In particular, we use the squared exponential covariance function where $\btheta_r = (\sigma_r^2, \phi_r)$,
+For each $w_r(\bs)$, we assign a Gaussian process (GP) prior with squared exponential covariance, i.e. $w_r \sim \text{GP}(0, C(\btheta_r))$ where $C(\btheta_r) = \left[C(s_i, s_{i'}; \btheta_r)\right]_{i, i' = 1}^n$. We refer to $C(\cdot)$ as the covariance function, because the covariance of $w_r(s_i)$ and $w_r(s_{i'})$ at locations $s_i$ and $s_{i'}$ is $\sigma_r^2 C(\btheta_r)_{i, i'}$. In particular, we use the squared exponential covariance function where $\btheta_r = (\sigma_r^2, \phi_r)$,
 \begin{align*}
     C(\btheta_r) &= \sigma_r^2 K(\phi_r), \text{ and}\\
     K(\phi_r) &= \left[ K(s_i, s_{i'}; \phi_r) \right]_{i, i' = 1}^n = \left[\exp\{\phi_r^{-1}\|s_i-s_{i'}\|^2\}\right]_{i, i' = 1}^n,
