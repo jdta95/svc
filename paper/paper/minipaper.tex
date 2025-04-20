@@ -169,20 +169,7 @@ Although knot data can be chosen manually, the \pkg{svc} package also contains a
 
 \section{Simulation}
 \label{sec:simulation}
-The purposes of the simulation are to 
-\begin{itemize}
-    \item assess the performance of SVCLM,
-    \item compare the differences in performance between between full and low rank for SVCLM,
-    \item compare the SVCLM with varycoef and spBayes.
-\end{itemize}
-
-\subsection{Metrics}
-To achieve the purposes of the simulation study, we used the following metrics to evaluate SVCLM:
-\begin{itemize}
-    \item Bias,
-    \item RMSE,
-    \item Computational cost (seconds).
-\end{itemize}
+We conducted simulation studies to assess the performance of SVCLM (low-rank) in accuracy and computational cost. We compared SVCLM (low rank) with spBayes to assess the differences between these two packages in accuracy and computational cost. To assess accuracy, we used bias ($E[\hat{\theta}] -\theta$) and RMSE ($\sqrt{E[\hat{\theta}-\theta]^2}$), where $\hat{\theta}$ is the estimated coefficient and $\theta$ is the true coefficient. Finally, we measure the average seconds to compute for each function to measure the computational cost.
 
 \subsubsection{Spatial Priors}
 
@@ -268,10 +255,6 @@ SVCLM (low rank)
 & -4.36 & 9.72 & 60.5
 & -3.34 & 3.68 & 60.5 
 & 1.15 & 2.11 & 60.5 \\
-\texttt{varycoef} 
-& 0.000 & 0.000 & 0.0 
-& 0.000 & 0.000 & 0.0 
-& 0.000 & 0.000 & 0.0 \\
 \texttt{spBayes} 
 & 0.000 & 0.000 & 0.0 
 & 0.000 & 0.000 & 0.0 
@@ -282,24 +265,11 @@ SVCLM (low rank)
 
 \begin{figure}[ht]
  \centering
- \includegraphics[width=\textwidth]{../../figures/plot_A_SVCLM_LOW.png}
- \caption{Posterior Mapping for W - SVCLM low rank}
+ \includegraphics[width=\textwidth]{../../figures/SVCLM_sim.png}
+ \caption{Posterior Mappings for Coefficients - SVCLM low rank}
  \label{fig:SVCLMA}
  \end{figure}
 
- \begin{figure}[ht]
- \centering
- \includegraphics[width=\textwidth]{../../figures/plot_B_SVCLM_LOW.png}
- \caption{Posterior Mapping for beta 1 - SVCLM low rank}
- \label{fig:SVCLMAB}
- \end{figure}
-
- \begin{figure}[ht]
- \centering
- \includegraphics[width=\textwidth]{../../figures/plot_C_SVCLM_LOW.png}
- \caption{Posterior Mapping for beta 2 - SVCLM low rank}
- \label{fig:SVCLMAC}
- \end{figure}
 
 \section{Data Analysis}
 \label{sec:data analysis}
