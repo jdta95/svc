@@ -59,12 +59,12 @@ This flexible approach captures complex, location-dependent relationships while 
 (1) a low-rank Gaussian process approximation for improved efficiency; 
 (2) a robust adaptive Metropolis (RAM) to automatically achieve optimal acceptance rate for spatial decay random walk sampling; and
 (3) optimized linear algebra operations using pre-computed distance matrices and Cholesky decompositions to accelerate covariance calculations. 
-Together, these advances make spatially varying coefficient models practical for large-scale environmental datasets.
+Together, these advances SVC models practical for large-scale environmental datasets.
 \section{Methods}
 \label{sec:methods}
 \subsection{SVC Model}
 \label{sec:model}
-Let $\mathcal{D} \subset \mathbb{R}^2$ denote a spatial domain of interest, $s_i \in \mathcal{D}$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear regression model with spatially varying coefficients assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
+Let $\mathcal{D} \subset \mathbb{R}^2$ denote a spatial domain of interest, $s_i \in \mathcal{D}$ for each $i = 1, \dots, n$ denote a spatial location for which we have collected data, and $\bs = (s_1, \dots, s_n)^\top$ be the vector of all such locations. Then $Y(\bs)$ are univariate dependent variables and $\bX(\bs) = (X_1(\bs), \dots, X_p(\bs))^\top$ are $p \times 1$ vectors of covariates. A linear SVC regression model assumes $Y(\bs)$ are dependent on $\bX(\bs)$ as follows:
 \begin{align*}
     Y(\bs) = \sum_{j=1}^p X_r(\bs)w_r(\bs) + \epsilon(\bs),
 \end{align*}
@@ -136,7 +136,7 @@ We will not go into detail here since the arguments above should be sufficient f
 
 By default, the starting values for $\tau^2$, $\sigma_r^2$, $\phi_r$, and $\bw_r^*$ are set to $1$, $1$, the midpoint between the corresponding upper and lower bounds, and $0$ for all locations, respectively. The default priors for $\tau^2$ and each $\sigma_r^2$ are all Inv.Gamma$(0.001, 0.001)$ to achieve uninformative priors. The starting proposal standard deviations for each $\phi_r$ are set to $1$ by default, and the target acceptance rate for the RAM algorithm is set to $0.234$ which is the asymptotically optimal acceptance rate under most conditions \citep{gelman}.
 
-In all cases, \code{svclm} returns a list containing the following matrices: \code{w\_samples}, an $(\code{mcmc} \times n \times p)$ array of the posterior samples for the spatially varying coefficients; \code{phi\_samples}, an $(\code{mcmc} \times p)$ matrix of the posterior samples for the spatial decay parameters; \code{phi\_acceptance}, an $(\code{mcmc} \times p)$ matrix which is $1$ if the proposal for $\phi_r$ was accepted and $0$ otherwise; \code{sigmasq\_samples}, an $(\code{mcmc} \times p)$ matrix of the posterior samples for the spatial variances; and \code{tausq\_samples}, a $(\code{mcmc} \times 1)$ matrix of the posterior samples for the nugget parameter.
+In all cases, \code{svclm} returns a list containing the following matrices: \code{w\_samples}, an $(\code{mcmc} \times n \times p)$ array of the posterior samples for the SVC's; \code{phi\_samples}, an $(\code{mcmc} \times p)$ matrix of the posterior samples for the spatial decay parameters; \code{phi\_acceptance}, an $(\code{mcmc} \times p)$ matrix which is $1$ if the proposal for $\phi_r$ was accepted and $0$ otherwise; \code{sigmasq\_samples}, an $(\code{mcmc} \times p)$ matrix of the posterior samples for the spatial variances; and \code{tausq\_samples}, a $(\code{mcmc} \times 1)$ matrix of the posterior samples for the nugget parameter.
 
 Although knot data can be chosen manually, the \pkg{svc} package also contains a function \code{simpleknots} to automatically select knots for the low-rank model. The function takes arguments \code{Y}, \code{X}, \code{coords}, and \code{k}, where \code{k} is an integer and \code{Y}, \code{X}, and \code{coords} match what would be provided to the \code{svclm} function. The function will return a list containing the objects \code{Y\_knots}, \code{X\_knots}, and \code{knots} which can then be passed directly to the \code{svclm} function. The knots are selected by sorting each dimension of coordinates and then selecting every $k$-th coordinate in each dimension.
 
@@ -224,7 +224,9 @@ We compared the performance of our proposed method with \pkg{spBayes} using bias
 
 \section{Data Analysis}
 \label{sec:data analysis}
-The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation. We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
+The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation \citep{hulley_new_2008, hulley_aster_2008, hulley_north_2009, hulley_validation_2009, hulley_generating_2011, hulley_quantifying_2012, nasa_jpl_aster_2014, hulley_span_2015}.
+
+We used temperature as a univariate outcome and used emissivity and NDVI as covariates.
 Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the variables in the dataset.
 
  \begin{figure}[ht]
@@ -238,7 +240,7 @@ Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the
  
  Emissivity ranged from 0.88 to 0.96. Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration.
 \subsection{Model}
-We modeled land surface temperature (LST) using a spatially varying coefficient (SVC) framework:
+We modeled land surface temperature (LST) using an SVC framework:
 \begin{align*}
 \text{Temp}(\bs) &= w_1(\bs) + w_2(\bs)\cdot\text{NDVI} + w_3(\bs)\cdot\text{Emissivity} + \epsilon(\bs),
 \end{align*}
@@ -272,7 +274,7 @@ Below is a plot of the posterior means of the coefficients over space.
  Each unit increase in NDVI corresponds to about $0.73^\circ C$ decrease in land surface temperature across space.
  The emissivity coefficients reveal strong positive associations (mean $w_3 \approx 330$) which implies that across space, a unit increase in emissivity increases temperature.
  
- We generated predicted temperature values across the entire spatial domain using the posterior mean estimates of the spatially varying coefficients. 
+ We generated predicted temperature values across the entire spatial domain using the posterior mean estimates of the SVC's. 
  These predictions were computed for all locations with complete predictor data, regardless of whether the actual temperature was observed. 
  The predicted values were obtained by multiplying the mean coefficient estimates with the corresponding covariate values at each location. 
  We then visualized both the observed and predicted temperature surfaces side by side to assess model performance and spatial prediction accuracy. 
