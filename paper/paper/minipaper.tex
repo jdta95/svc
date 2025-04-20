@@ -173,31 +173,35 @@ Although knot data can be chosen manually, the \pkg{svc} package also contains a
 % \end{tabular}
 % \end{table}
 
-We compared the performance of our proposed method with \pkg{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for $ \beta_1 $, $ \beta_2 $, and $ w $ were all set to 1.
+We compared the performance of our proposed method with \pkg{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for $ w_0 $, $ w_1 $, and $ w_2 $ were all set to 0, 10, and -5 respectively.
 
 \begin{table}[ht!]
 \centering
-\caption{Comparison of methods based on bias, RMSE, and computation time (seconds). Placeholder values shown.}
+\caption{Comparison of methods based on bias, RMSE, and computation time (seconds).}
 \label{tab:method-compact}
-\begin{tabular}{|l|ccc|ccc|ccc|}
+\begin{tabular}{|l|cc|cc|cc|c|}
 \hline
 \textbf{Method} 
-& \multicolumn{3}{c|}{ $ \beta_1 $ } 
-& \multicolumn{3}{c|}{ $ \beta_2 $ } 
-& \multicolumn{3}{c|}{ $ w $ } \\
-\cline{2-10}
-& Bias & RMSE & Time 
-& Bias & RMSE & Time 
-& Bias & RMSE & Time \\
+& \multicolumn{2}{c|}{$\beta_1$} 
+& \multicolumn{2}{c|}{$\beta_2$} 
+& \multicolumn{2}{c|}{$w$} 
+& \textbf{Time (s)} \\
+\cline{2-7}
+& Bias & RMSE 
+& Bias & RMSE 
+& Bias & RMSE 
+& \\
 \hline
 \pkg{svc} (low rank)
-& -4.36 & 9.72 & 60.5
-& -3.34 & 3.68 & 60.5 
-& 1.15 & 2.11 & 60.5 \\
+& -4.36 & 9.72 
+& -3.34 & 3.68 
+& 1.15 & 2.11 
+& 60.5 \\
 \pkg{spBayes (low rank)} 
-& 0.09 & 0.62 & 23.2
-& -0.05 & 0.14 & 23.2 
-& -0.01 & 0.13 & 23.2 \\
+& 0.09 & 0.62 
+& -0.05 & 0.14 
+& -0.01 & 0.13 
+& 23.2 \\
 \hline
 \end{tabular}
 \end{table}
@@ -212,7 +216,7 @@ We compared the performance of our proposed method with \pkg{spBayes} using bias
 
 \begin{figure}[H]
  \centering
- \includegraphics[width=\textwidth]{../../figures/spBayes_sim.png}
+ \includegraphics[width=\textwidth]{../../figures/spBayes_combined.png}
  \caption{Posterior Mappings for Coefficients - spBayes}
  \label{fig:spBayesA}
  \end{figure}
