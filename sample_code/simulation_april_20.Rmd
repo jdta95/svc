@@ -1,0 +1,588 @@
+---
+title: "Untitled"
+author: "new"
+date: "4/4/2025"
+output: pdf_document
+---
+
+### Initialization
+```{r}
+library(knitr)
+library(varycoef)
+library(spBayes)
+library(svc)
+library(ggplot2)
+library(gridExtra)
+library(Matrix)
+library(here)
+set.seed(123)
+
+calc_C_phi = function(coords, phi) {
+  n = nrow(coords)
+  dists = as.matrix(dist(coords)) ^ 2
+  C_phi = exp(-0.5 / phi * dists)
+}
+
+mcmc = 5000
+
+```
+
+
+
+```{r}
+set.seed(123)
+svclm_low = data.frame()
+
+#full
+
+for(i in 1:1000)
+{
+  lat = seq(0, 20, by = 1)
+  lon = seq(0, 20, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 0.1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  sigmasq_1 = 0.1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 10
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 0.1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 1)
+  X_2 = rnorm(n, 5, 1)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  
+  X = cbind(X_1,X_2)
+  X = cbind(1,X)
+  m = nrow(knots)
+  l = 0
+  u = 4
+
+ 
+  
+ knot_results = simpleknots(
+  Y = Y,
+  X = X,
+  coords = coords,
+  k = 2  
+)
+
+# Extract knot components
+Y_star = knot_results$Y_knots
+X_star = knot_results$X_knots
+knots = knot_results$knots
+
+  
+  m = nrow(knots)
+  
+  start_time <- Sys.time()
+  low_rank = svclm(Y=Y, X=X, coords = coords,Y_knots = Y_star,
+                         X_knots = X_star,
+                         knots = knots,phi_lower = rep(l,3),
+                         phi_upper =rep(u,3),mcmc=3000)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+svclm_low = rbind(svclm_low,c(mean(colMeans(low_rank$w_samples[2000:3000, ,1])),mean(colMeans(low_rank$w_samples[2000:3000, ,2])),mean(colMeans(low_rank$w_samples[2000:3000, ,3])), time_taken ))   
+   
+   
+   
+}
+
+ 
+
+```
+
+
+
+```{r}
+set.seed(123)
+svclm_full = data.frame()
+
+#full
+
+for(i in 1:1000)
+{
+  lat = seq(0, 20, by = 1)
+  lon = seq(0, 20, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 0.1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  sigmasq_1 = 0.1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 0.1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 1)
+  X_2 = rnorm(n, 5, 1)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  
+  X = cbind(X_1,X_2)
+  X = cbind(1,X)
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+  full_rank = svclm(Y=Y, X=X,coords= coords,phi_lower = rep(l,3),
+                         phi_upper =rep(u,3),mcmc=3000)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+   svclm_full = rbind(svclm_full,c(mean(colMeans(full_rank$w_samples[2000:3000, ,1])),mean(colMeans(full_rank$w_samples[2000:3000, ,2])),mean(colMeans(full_rank$w_samples[2000:3000, ,3])), time_taken ))
+ 
+   
+   
+   
+}
+
+ 
+
+```
+```
+
+
+```{r}
+set.seed(123)
+coef = data.frame()
+for(i in 1:1000)
+{
+  lat = seq(0, 20, by = 1)
+  lon = seq(0, 20, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 0.1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  sigmasq_1 = 0.1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 3
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 0.1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 1)
+  X_2 = rnorm(n, 5, 1)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  
+  X = cbind(X_1,X_2)
+  X = cbind(1,X)
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  control <- SVC_mle_control(
+  # initial values of optimization
+  init = rep(0.1, 2*3+1),
+  # using profile likelihood
+  profileLik = TRUE
+)
+
+# controls specific to optimization procedure, see help(optim)
+opt.control <- list(
+  # number of iterations (set to one for demonstration sake)
+  maxit = 1,
+  # tracing information
+  trace = 6
+)
+  start_time <- Sys.time()
+  fit <- SVC_mle(y = Y, X = X,locs = coords,control = control,
+               optim.control = opt.control)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+ coef = rbind(coef,c(fit$coefficients[1],fit$coefficients[2],fit$coefficients[3],time_taken)) 
+  
+
+}
+```
+
+
+```{r}
+bayes = data.frame()
+for(i in 1:1000)
+{
+  lat = seq(0, 20, by = 1)
+  lon = seq(0, 20, by = 1)
+  
+  coords = as.matrix(expand.grid(lat, lon))
+  colnames(coords) = c("lat", "lon")
+  
+  n = nrow(coords)
+  p = 2
+  
+  # generating w
+  sigmasq_w = 0.1
+  phi_w = 2
+  
+  C_w = calc_C_phi(coords, phi_w)
+  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+  
+  sigmasq_1 = 0.1
+  phi_1 = 2
+  
+  C_1 = calc_C_phi(coords, phi_1)
+  beta_1_mean = 10
+  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+  
+  sigmasq_2 = 0.1
+  phi_2 = 2
+  
+  C_2 = calc_C_phi(coords, phi_2)
+  beta_2_mean = -5
+  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  
+  # generating X
+  X_1 = rnorm(n, 0, 1)
+  X_2 = rnorm(n, 5, 1)
+  
+  # generating epsilon
+  tausq = 0.0001
+  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+  
+  Y =  X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  
+  
+  X = cbind(X_1,X_2)
+  X = cbind(1,X)
+  m = nrow(knots)
+  l = 0
+  u = 4
+  
+  start_time <- Sys.time()
+ svc_fit <- spSVC(
+  y ~ x1 + x2,
+  coords = knotss,
+  data = data.frame(y = Y, x1 = X_1, x2 = X_2),
+  starting = list(
+    "phi" = rep(2, 3),       # Matches your phi_w, phi_1, phi_2 values
+    "sigma.sq" = rep(0.1, 3), # Matches your sigmasq_w, sigmasq_1, sigmasq_2
+    "tau.sq" = 0.0001        # Matches your tausq
+  ),
+  tuning = list(
+    "phi" = rep(0.5, 3),     # Slightly larger tuning for phi since true value is 2
+    "sigma.sq" = rep(0.05, 3), # Smaller tuning as true values are 0.1
+    "tau.sq" = 0.00005       # Smaller tuning as true value is very small
+  ),
+  priors = list(
+    "phi.Unif" = list(rep(0.1, 3), rep(5, 3)), # Upper bound 5 since true is 2
+    "sigma.sq.IG" = list(rep(2, 3), rep(0.1, 3)), # Second param is scale (mean = scale/(shape-1))
+    "tau.sq.IG" = list(2, 0.0001)              # Mean around true value
+
+  ),
+  cov.model = "exponential",
+  n.samples = 3000,
+  svc.cols = c(1, 2, 3)       # All coefficients have spatial variation
+)
+  svc_fit_rec <- spRecover(svc_fit, start = 2000, verbose = FALSE,get.beta= TRUE,get.w= TRUE)
+  end_time <- Sys.time()
+  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  beta_samples <- svc_fit_rec$p.beta.recover.samples
+  w_posterior_samples <- as.matrix(svc_fit_rec$p.w.recover.samples)
+  w_means <- mean(colMeans(w_posterior_samples))
+  bayes = rbind(bayes,c(mean(beta_samples[,1]),mean(beta_samples[,2]),mean(beta_samples[,3]),time_taken))
+}
+```
+
+
+
+```{r}
+# True values
+true_w <- 0
+true_beta1 <- 10
+true_beta2 <- -5
+
+# Function to compute Bias and RMSE
+get_metrics <- function(estimates, true_value) {
+  bias <- mean(estimates - true_value)
+  rmse <- sqrt(mean((estimates - true_value)^2))
+  return(c(bias = bias, rmse = rmse))
+}
+
+# Compute metrics for each method
+results <- data.frame(
+  Method = c("svclm_full", "svclm_low", "Bayes", "Coef"),
+  Bias_w = NA, RMSE_w = NA,
+  Bias_beta1 = NA, RMSE_beta1 = NA,
+  Bias_beta2 = NA, RMSE_beta2 = NA,
+  Mean_Time = NA
+)
+
+# svclm_full
+results[1, 2:3] <- get_metrics(svclm_full[,1], true_w)
+results[1, 4:5] <- get_metrics(svclm_full[,2], true_w)
+results[1, 6:7] <- get_metrics(svclm_full[,3], true_w)
+results[1, 8]   <- mean(svclm_full[,4])
+
+# svclm_low
+results[2, 2:3] <- get_metrics(svclm_low[,1], true_w)
+results[2, 4:5] <- get_metrics(svclm_low[,2], true_beta1)
+results[2, 6:7] <- get_metrics(svclm_low[,3], true_beta2)
+results[2, 8]   <- mean(svclm_low[,4])
+
+# Bayes
+results[3, 2:3] <- get_metrics(bayes[,1], true_w)
+results[3, 4:5] <- get_metrics(bayes[,2], true_beta1)
+results[3, 6:7] <- get_metrics(bayes[,3], true_beta2)
+results[3, 8]   <- mean(bayes[,4])
+
+# Coef (MLE)
+results[4, 2:3] <- get_metrics(coef[,1], true_w)
+results[4, 4:5] <- get_metrics(coef[,2], true_beta1)
+results[4, 6:7] <- get_metrics(coef[,3], true_beta2)
+results[4, 8]   <- mean(coef[,4])
+
+# View result
+print(results, digits=3)
+```
+
+
+
+```{r}
+
+library(ggplot2)
+```
+
+
+
+
+
+
+```{r}
+A = ggplot(svclm_full, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w2)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "W")) +
+  ggtitle("Spatial Distribution of Posterior Mean (W)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+
+B = ggplot(svclm_full, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 1")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 1)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+C = ggplot(svclm_full, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 2")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 2)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+```
+
+
+
+```{r}
+beta.samples <- svc_fit_rec$p.w.recover.samples.list
+
+w_intercept_means <- rowMeans(svc_fit_rec$p.w.recover.samples.list$`w.(Intercept)`) + mean(svc_fit_rec$p.beta.recover.samples[,1])
+w_x1_means <- rowMeans(svc_fit_rec$p.w.recover.samples.list$`w.x1`) + mean(svc_fit_rec$p.beta.recover.samples[,2])
+w_x2_means <- rowMeans(svc_fit_rec$p.w.recover.samples.list$`w.x2`) + mean(svc_fit_rec$p.beta.recover.samples[,3])
+
+
+
+w_means_df <- data.frame(
+  lat = coords[, 1],
+  lon = coords[, 2],
+  w1 = w_intercept_means ,
+  w2 = w_x1_means,
+  w3 = w_x2_means 
+)
+A = ggplot(w_means_df, aes(x = coords[,1], y = coords[,2])) +
+  geom_raster(aes(fill = w1)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "W")) +
+  ggtitle("Spatial Distribution of Posterior Mean (W) - spBayes") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+
+B = ggplot(w_means_df, aes(x = coords[,1], y = coords[,2])) +
+  geom_raster(aes(fill = w2)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 1")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 1) - spBayes") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+C = ggplot(w_means_df, aes(x = coords[,1], y = coords[,2])) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 2")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 2) - spBayes") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+```
+
+
+
+```{r}
+A = ggplot(coef, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w2)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "W")) +
+  ggtitle("Spatial Distribution of Posterior Mean (W)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+
+B = ggplot(coef, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 1")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 1)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+C = ggplot(coef, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 2")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 2)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+```
+
+
+
+
+```{r}
+A = ggplot(bayes, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w2)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "W")) +
+  ggtitle("Spatial Distribution of Posterior Mean (W)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+
+
+B = ggplot(bayes, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 1")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 1)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+
+C = ggplot(bayes, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = w3)) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  guides(fill = guide_legend(title = "Beta 2")) +
+  ggtitle("Spatial Distribution of Posterior Mean (Beta 2)") +
+  coord_fixed() +
+  scico::scale_fill_scico(palette = "tofino") +
+  theme_minimal()
+```
+
+
+
+```{r}
+
+```
+
