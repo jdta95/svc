@@ -159,7 +159,11 @@ Although knot data can be chosen manually, the \pkg{svc} package also contains a
 % \end{tabular}
 % \end{table}
 
-We compared the performance of our proposed method with \pkg{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. The true values for $ w_0 $, $ w_1 $, and $ w_2 $ were all set to 0, 10, and -5 respectively. We used 3000 MCMC iterations.
+We compared the performance of our package with \pkg{spBayes} using bias, RMSE, and computational time (in seconds), averaged over 1000 simulation replications. In each simulation, we generated data for $441$ locations using the same parameters and obtained knot data using the \code{simpleknots} function with \code{k} set to $2$. Then we used both packages to run an MCMC for $3000$ iterations and predicted the coefficients at all locations using the last $1000$ iterations of each MCMC chain.
+
+Each dataset was generated with $p = 3$, $\sigma_1^2 = \sigma_2^2 = \sigma_3^2 = 1$, $\phi_1 = \phi_2 = \phi_3 = 2$, and $\tau^2 = 0.0001$. The covariates were generated as $X_1 = \mathbf{1}_n$, $X_2 \sim \mathcal{N}(0, 1)$, and $X_3 \sim \mathcal{N}(0, 1)$. True values for the means of $ w_0 $, $ w_1 $, and $ w_2 $ were set to 0, 10, and -5 respectively. The response variable was generated as $Y(\bs) = w_1(\bs) + w_2(\bs) X_2 + w_3(\bs) X_3 + \epsilon(\bs)$.
+
+Table \ref{tab:method-compact} summarizes the results of the simulation. The \pkg{svc} package had better bias and RMSE for $w_1$ but worse bias and RMSE for $w_2$ and $w_3$. Our package also ran more than $3$ times faster on average for the same number of iterations.
 
 \begin{table}[ht!]
 \centering
@@ -168,9 +172,9 @@ We compared the performance of our proposed method with \pkg{spBayes} using bias
 \begin{tabular}{|l|cc|cc|cc|c|}
 \hline
 \textbf{Method} 
-& \multicolumn{2}{c|}{$\beta_1$} 
-& \multicolumn{2}{c|}{$\beta_2$} 
-& \multicolumn{2}{c|}{$w$} 
+& \multicolumn{2}{c|}{$w_1$} 
+& \multicolumn{2}{c|}{$w_1$} 
+& \multicolumn{2}{c|}{$w_2$} 
 & \textbf{Time (s)} \\
 \cline{2-7}
 & Bias & RMSE 
@@ -179,14 +183,14 @@ We compared the performance of our proposed method with \pkg{spBayes} using bias
 & \\
 \hline
 \pkg{svc} (low rank)
+& 0.00 & 0.09 
 & 1.16 & 1.48 
 & -1.30 & 2.08 
-& 0.00 & 0.09 
 & 7.17 \\
-\pkg{spBayes (low rank)} 
+\pkg{spBayes} (low rank) 
+& -0.01 & 0.21 
 & -0.01 & 0.25 
 & 0.01 & 0.22 
-& -0.01 & 0.21 
 & 23.26 \\
 \hline
 \end{tabular}
@@ -230,7 +234,7 @@ We modeled (LST) using an SVC framework:
 \begin{align*}
 \text{Temp}(\bs) &= w_1(\bs) + w_2(\bs)\cdot\text{NDVI} + w_3(\bs)\cdot\text{Emissivity} + \epsilon(\bs),
 \end{align*}
-with priors as specified in \ref{sec:methods}.
+with priors as specified in Section \ref{sec:methods}.
 
 We specified weakly informative priors: $\tau^2 \sim \text{Inv-Gamma}(0.001, 0.001)$, \newline $\sigma_r^2 \sim \text{Inv-Gamma}(0.001, 0.001)$, and $\phi_r \sim \text{Uniform}(0.001, 500)$, for each $r = 1, \dots 3$.
 
@@ -279,7 +283,7 @@ Below is a plot of the posterior means of the coefficients at each location. The
 \label{sec:Conclusion}
 The \pkg{svc} package provides a flexible and efficient framework for fitting SVC models that capture heterogeneous spatial processes. By leveraging low-rank Gaussian process approximations, RAM adaptation, and various sampling optimizations, we have made SVC models more computationally feasible for large-scale spatial datasets.
 
-Compared to \pkg{spBayes}, our method performs more efficiently and has lower bias and RMSE for spatial random effects $w_0$, but has higher bias and RMSE for other coefficients $w_1$ and $w_2$.
+Compared to \pkg{spBayes}, our method performs more efficiently and has lower bias and RMSE for the spatial random intercept, but has higher bias and RMSE for all other SVC's. However, \pkg{svc} did run much faster than \pkg{spBayes} for the same number of iterations.
 
 One limitation of our method is that it requires complete data at knot locations, whereas \pkg{spBayes} does not require any data at selected knot locations.
 
