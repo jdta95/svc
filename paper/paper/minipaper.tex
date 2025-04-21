@@ -209,33 +209,28 @@ Table \ref{tab:method-compact} summarizes the results of the simulation. The \pk
  \caption{Posterior Mappings for Coefficients - True coefficients}
  \label{fig:true}
  \end{figure}
-
-
 % \begin{figure}[H]
 %  \centering
 %  \includegraphics[width=\textwidth]{../../figures/spBayes_combined.png}
 %  \caption{Posterior Mappings for Coefficients - spBayes}
 %  \label{fig:spBayesA}
 %  \end{figure}
-
 \section{Data Analysis}
 \label{sec:data analysis}
-The real world data used in this section is a gridded satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation \citep{hulley_new_2008, hulley_aster_2008, hulley_north_2009, hulley_validation_2009, hulley_generating_2011, hulley_quantifying_2012, nasa_jpl_aster_2014, hulley_span_2015}.
-The data had 111,556 observations and 6 variables namely, latitude, longitude, emissivity, NDVI and land surface tempareture (LST). Variables in the dataset were means computed from all clear-sky pixels of the Terra Advanced Spaceborne Thermal Emission and Reflection Radiometer (ASTER) scenes acquired from 2000 through 2008.
+We tested \code{svclm} on satellite data with latitude, longitude, temperature, Normalized Difference Vegetation Index (NDVI); which measures greenness, and emissivity which represents a surface's efficiency in emitting thermal radiation \citep{hulley_new_2008, hulley_aster_2008, hulley_north_2009, hulley_validation_2009, hulley_generating_2011, hulley_quantifying_2012, nasa_jpl_aster_2014, hulley_span_2015}.
+The data had 111,556 observations.
 We used LST as a univariate outcome and used emissivity and NDVI as covariates.
 Figure \ref{fig:spatialpatterns} below reveals the spatial  distributions of the variables in the dataset.
-
  \begin{figure}[H]
  \centering
- \includegraphics[width=\textwidth]{../../figures/spatial_horizontal_stack.png}
+ \includegraphics[width=6in]{../../figures/spatial_horizontal_stack.png}
  \caption{
    Spatial distributions of emissivity, NDVI, and  land surface temperature in the study area. 
  }
  \label{fig:spatialpatterns}
  \end{figure}
- 
-  Emissivity ranged from 0.88 to 0.96, NDVI ranged from 0.2 to 0.6  and LST, from 290 to 320.  
- Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration.
+Emissivity ranged from 0.88 to 0.96, NDVI ranged from 0.2 to 0.6  and LST, from 290 to 320.  
+ Cooler regions often align with greener (higher NDVI) areas — vegetation can reduce surface temperature through evapotranspiration. 
 \subsection{Model}
 We modeled (LST) using an SVC framework:
 \begin{align*}
