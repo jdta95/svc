@@ -8,7 +8,7 @@ output: pdf_document
 ### Initialization
 ```{r}
 library(knitr)
-library(varycoef)
+# library(varycoef)
 library(spBayes)
 library(svc)
 library(ggplot2)
@@ -31,244 +31,238 @@ mcmc = 5000
 
 ```{r}
 set.seed(123)
-svclm_low = data.frame()
+svclm_low = matrix(nrow = 1000, ncol = 4)
 
-#full
+# low rank svclm
+lat = seq(0, 20, by = 1)
+lon = seq(0, 20, by = 1)
 
-for(i in 1:1000)
+coords = as.matrix(expand.grid(lat, lon))
+colnames(coords) = c("lat", "lon")
+
+n = nrow(coords)
+p = 2
+
+sigmasq_1 = 1
+phi_1 = 2
+C_1 = calc_C_phi(coords, phi_1)
+w_1_mean = 0
+
+sigmasq_2 = 1
+phi_2 = 2
+C_2 = calc_C_phi(coords, phi_2)
+w_2_mean = 10
+
+sigmasq_3 = 1
+phi_3 = 2
+C_3 = calc_C_phi(coords, phi_3)
+w_3_mean = -5
+
+tausq = 0.0001
+
+l = 0
+u = 4
+
+for (i in 1:1000)
 {
-  lat = seq(0, 20, by = 1)
-  lon = seq(0, 20, by = 1)
-  
-  coords = as.matrix(expand.grid(lat, lon))
-  colnames(coords) = c("lat", "lon")
-  
-  n = nrow(coords)
-  p = 2
-  
   # generating w
-  sigmasq_w = 0.1
-  phi_w = 2
-  
-  C_w = calc_C_phi(coords, phi_w)
-  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
-  
-  sigmasq_1 = 0.1
-  phi_1 = 2
-  
-  C_1 = calc_C_phi(coords, phi_1)
-  beta_1_mean = 10
-  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
-  
-  sigmasq_2 = 0.1
-  phi_2 = 2
-  
-  C_2 = calc_C_phi(coords, phi_2)
-  beta_2_mean = -5
-  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+  w1 = MASS::mvrnorm(1, rep(w_1_mean, n), sigmasq_1 * C_1)
+  w2 = MASS::mvrnorm(1, rep(w_2_mean, n), sigmasq_2 * C_2)
+  w3 = MASS::mvrnorm(1, rep(w_3_mean, n), sigmasq_3 * C_3)
   
   # generating X
-  X_1 = rnorm(n, 0, 1)
-  X_2 = rnorm(n, 5, 1)
+  X2 = rnorm(n, 0, 1)
+  X3 = rnorm(n, 0, 1)
   
   # generating epsilon
-  tausq = 0.0001
   epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
   
-  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+  Y = w1 + X2 * w2 + X3 * w3 + epsilon
   
+  X = cbind(1, X2, X3)
   
-  X = cbind(X_1,X_2)
-  X = cbind(1,X)
-  m = nrow(knots)
-  l = 0
-  u = 4
-
- 
+  knot_results = simpleknots(Y = Y,
+                             X = X,
+                             coords = coords,
+                             k = 2)
   
- knot_results = simpleknots(
-  Y = Y,
-  X = X,
-  coords = coords,
-  k = 2  
-)
-
-# Extract knot components
-Y_star = knot_results$Y_knots
-X_star = knot_results$X_knots
-knots = knot_results$knots
-
-  
-  m = nrow(knots)
+  # Extract knot components
+  Y_star = knot_results$Y_knots
+  X_star = knot_results$X_knots
+  knots = knot_results$knots
   
   start_time <- Sys.time()
-  low_rank = svclm(Y=Y, X=X, coords = coords,Y_knots = Y_star,
-                         X_knots = X_star,
-                         knots = knots,phi_lower = rep(l,3),
-                         phi_upper =rep(u,3),mcmc=3000)
+  low_rank = svclm(
+    Y = Y,
+    X = X,
+    coords = coords,
+    Y_knots = Y_star,
+    X_knots = X_star,
+    knots = knots,
+    phi_lower = rep(l, 3),
+    phi_upper = rep(u, 3),
+    mcmc = 3000
+  )
   end_time <- Sys.time()
+  
   time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
   
-svclm_low = rbind(svclm_low,c(mean(colMeans(low_rank$w_samples[2000:3000, ,1])),mean(colMeans(low_rank$w_samples[2000:3000, ,2])),mean(colMeans(low_rank$w_samples[2000:3000, ,3])), time_taken ))   
-   
-   
-   
+  svclm[i, 1] = mean(low_rank$w_samples[2000:3000, , 1])
+  svclm[i, 2] = mean(low_rank$w_samples[2000:3000, , 2])
+  svclm[i, 3] = mean(low_rank$w_samples[2000:3000, , 3])
+  svclm[i, 4] = time_taken
 }
-
- 
-
 ```
 
 
 
 ```{r}
-set.seed(123)
-svclm_full = data.frame()
+# set.seed(123)
+# svclm_full = data.frame()
+# 
+# #full
+# 
+# for(i in 1:1000)
+# {
+#   lat = seq(0, 20, by = 1)
+#   lon = seq(0, 20, by = 1)
+#   
+#   coords = as.matrix(expand.grid(lat, lon))
+#   colnames(coords) = c("lat", "lon")
+#   
+#   n = nrow(coords)
+#   p = 2
+#   
+#   # generating w
+#   sigmasq_w = 0.1
+#   phi_w = 2
+#   
+#   C_w = calc_C_phi(coords, phi_w)
+#   w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+#   
+#   sigmasq_1 = 0.1
+#   phi_1 = 2
+#   
+#   C_1 = calc_C_phi(coords, phi_1)
+#   beta_1_mean = 3
+#   beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+#   
+#   sigmasq_2 = 0.1
+#   phi_2 = 2
+#   
+#   C_2 = calc_C_phi(coords, phi_2)
+#   beta_2_mean = -5
+#   beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+#   
+#   # generating X
+#   X_1 = rnorm(n, 0, 1)
+#   X_2 = rnorm(n, 5, 1)
+#   
+#   # generating epsilon
+#   tausq = 0.0001
+#   epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+#   
+#   Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+#   
+#   
+#   X = cbind(X_1,X_2)
+#   X = cbind(1,X)
+#   m = nrow(knots)
+#   l = 0
+#   u = 4
+#   
+#   start_time <- Sys.time()
+#   full_rank = svclm(Y=Y, X=X,coords= coords,phi_lower = rep(l,3),
+#                          phi_upper =rep(u,3),mcmc=3000)
+#   end_time <- Sys.time()
+#   time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+#    svclm_full = rbind(svclm_full,c(mean(colMeans(full_rank$w_samples[2000:3000, ,1])),mean(colMeans(full_rank$w_samples[2000:3000, ,2])),mean(colMeans(full_rank$w_samples[2000:3000, ,3])), time_taken ))
+#  
+#    
+#    
+#    
+# }
+# 
+#  
 
-#full
-
-for(i in 1:1000)
-{
-  lat = seq(0, 20, by = 1)
-  lon = seq(0, 20, by = 1)
-  
-  coords = as.matrix(expand.grid(lat, lon))
-  colnames(coords) = c("lat", "lon")
-  
-  n = nrow(coords)
-  p = 2
-  
-  # generating w
-  sigmasq_w = 0.1
-  phi_w = 2
-  
-  C_w = calc_C_phi(coords, phi_w)
-  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
-  
-  sigmasq_1 = 0.1
-  phi_1 = 2
-  
-  C_1 = calc_C_phi(coords, phi_1)
-  beta_1_mean = 3
-  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
-  
-  sigmasq_2 = 0.1
-  phi_2 = 2
-  
-  C_2 = calc_C_phi(coords, phi_2)
-  beta_2_mean = -5
-  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
-  
-  # generating X
-  X_1 = rnorm(n, 0, 1)
-  X_2 = rnorm(n, 5, 1)
-  
-  # generating epsilon
-  tausq = 0.0001
-  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
-  
-  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
-  
-  
-  X = cbind(X_1,X_2)
-  X = cbind(1,X)
-  m = nrow(knots)
-  l = 0
-  u = 4
-  
-  start_time <- Sys.time()
-  full_rank = svclm(Y=Y, X=X,coords= coords,phi_lower = rep(l,3),
-                         phi_upper =rep(u,3),mcmc=3000)
-  end_time <- Sys.time()
-  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
-   svclm_full = rbind(svclm_full,c(mean(colMeans(full_rank$w_samples[2000:3000, ,1])),mean(colMeans(full_rank$w_samples[2000:3000, ,2])),mean(colMeans(full_rank$w_samples[2000:3000, ,3])), time_taken ))
- 
-   
-   
-   
-}
-
- 
-
-```
 ```
 
 
 ```{r}
-set.seed(123)
-coef = data.frame()
-for(i in 1:1000)
-{
-  lat = seq(0, 20, by = 1)
-  lon = seq(0, 20, by = 1)
-  
-  coords = as.matrix(expand.grid(lat, lon))
-  colnames(coords) = c("lat", "lon")
-  
-  n = nrow(coords)
-  p = 2
-  
-  # generating w
-  sigmasq_w = 0.1
-  phi_w = 2
-  
-  C_w = calc_C_phi(coords, phi_w)
-  w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
-  
-  sigmasq_1 = 0.1
-  phi_1 = 2
-  
-  C_1 = calc_C_phi(coords, phi_1)
-  beta_1_mean = 3
-  beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
-  
-  sigmasq_2 = 0.1
-  phi_2 = 2
-  
-  C_2 = calc_C_phi(coords, phi_2)
-  beta_2_mean = -5
-  beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
-  
-  # generating X
-  X_1 = rnorm(n, 0, 1)
-  X_2 = rnorm(n, 5, 1)
-  
-  # generating epsilon
-  tausq = 0.0001
-  epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
-  
-  Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
-  
-  
-  X = cbind(X_1,X_2)
-  X = cbind(1,X)
-  m = nrow(knots)
-  l = 0
-  u = 4
-  
-  control <- SVC_mle_control(
-  # initial values of optimization
-  init = rep(0.1, 2*3+1),
-  # using profile likelihood
-  profileLik = TRUE
-)
-
-# controls specific to optimization procedure, see help(optim)
-opt.control <- list(
-  # number of iterations (set to one for demonstration sake)
-  maxit = 1,
-  # tracing information
-  trace = 6
-)
-  start_time <- Sys.time()
-  fit <- SVC_mle(y = Y, X = X,locs = coords,control = control,
-               optim.control = opt.control)
-  end_time <- Sys.time()
-  time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
- coef = rbind(coef,c(fit$coefficients[1],fit$coefficients[2],fit$coefficients[3],time_taken)) 
-  
-
-}
+# set.seed(123)
+# coef = data.frame()
+# for(i in 1:1000)
+# {
+#   lat = seq(0, 20, by = 1)
+#   lon = seq(0, 20, by = 1)
+#   
+#   coords = as.matrix(expand.grid(lat, lon))
+#   colnames(coords) = c("lat", "lon")
+#   
+#   n = nrow(coords)
+#   p = 2
+#   
+#   # generating w
+#   sigmasq_w = 0.1
+#   phi_w = 2
+#   
+#   C_w = calc_C_phi(coords, phi_w)
+#   w = MASS::mvrnorm(1, rep(0, n), sigmasq_w * C_w)
+#   
+#   sigmasq_1 = 0.1
+#   phi_1 = 2
+#   
+#   C_1 = calc_C_phi(coords, phi_1)
+#   beta_1_mean = 3
+#   beta_1 = MASS::mvrnorm(1, rep(beta_1_mean, n),sigmasq_1 * C_1 )
+#   
+#   sigmasq_2 = 0.1
+#   phi_2 = 2
+#   
+#   C_2 = calc_C_phi(coords, phi_2)
+#   beta_2_mean = -5
+#   beta_2 = MASS::mvrnorm(1, rep(beta_2_mean, n),sigmasq_2 * C_2)
+#   
+#   # generating X
+#   X_1 = rnorm(n, 0, 1)
+#   X_2 = rnorm(n, 5, 1)
+#   
+#   # generating epsilon
+#   tausq = 0.0001
+#   epsilon = rnorm(n, mean = 0, sd = sqrt(tausq))
+#   
+#   Y = X_1 * beta_1 + X_2 * beta_2 + w + epsilon
+#   
+#   
+#   X = cbind(X_1,X_2)
+#   X = cbind(1,X)
+#   m = nrow(knots)
+#   l = 0
+#   u = 4
+#   
+#   control <- SVC_mle_control(
+#   # initial values of optimization
+#   init = rep(0.1, 2*3+1),
+#   # using profile likelihood
+#   profileLik = TRUE
+# )
+# 
+# # controls specific to optimization procedure, see help(optim)
+# opt.control <- list(
+#   # number of iterations (set to one for demonstration sake)
+#   maxit = 1,
+#   # tracing information
+#   trace = 6
+# )
+#   start_time <- Sys.time()
+#   fit <- SVC_mle(y = Y, X = X,locs = coords,control = control,
+#                optim.control = opt.control)
+#   end_time <- Sys.time()
+#   time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+#  coef = rbind(coef,c(fit$coefficients[1],fit$coefficients[2],fit$coefficients[3],time_taken)) 
+#   
+# 
+# }
 ```
 
 
